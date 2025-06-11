@@ -33,3 +33,13 @@ console_error_panic_hook = "0.1"
 # Additional dependencies
 once_cell = "1.19"
 serde-wasm-bindgen = "0.6"
+urlencoding = "2.1"
+
+# For SSR
+axum = { version = "0.7", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+tower = { version = "0.4", optional = true }
+
+[features]
+default = []
+ssr = ["axum", "tokio", "tower"]

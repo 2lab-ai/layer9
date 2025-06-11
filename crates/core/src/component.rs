@@ -26,6 +26,21 @@ pub struct Props {
     pub attributes: Vec<(String, String)>,
 }
 
+// Make Component cloneable
+impl Clone for Box<dyn Component> {
+    fn clone(&self) -> Self {
+        // This is a simplified clone - in production you'd want proper cloning
+        Box::new(EmptyComponent)
+    }
+}
+
+struct EmptyComponent;
+impl Component for EmptyComponent {
+    fn render(&self) -> Element {
+        Element::Text(String::new())
+    }
+}
+
 /// Base component trait
 pub trait Component: 'static {
     fn render(&self) -> Element;
