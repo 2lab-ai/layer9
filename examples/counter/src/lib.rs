@@ -1,10 +1,13 @@
 //! Layer9 Counter Example - Minimal Version
 
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element};
 
-// Simple counter state
-static mut COUNTER: i32 = 0;
+// Thread-safe counter state
+thread_local! {
+    static COUNTER: RefCell<i32> = RefCell::new(0);
+}
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
@@ -45,9 +48,9 @@ pub fn main() -> Result<(), JsValue> {
 
     // Add click handler
     let inc_closure = Closure::wrap(Box::new(move || {
-        unsafe {
-            COUNTER += 1;
-        }
+        COUNTER.with(|counter| {
+            *counter.borrow_mut() += 1;
+        });
         let doc = web_sys::window().unwrap().document().unwrap();
         update_counter_display(&doc).unwrap();
     }) as Box<dyn Fn()>);
@@ -61,9 +64,9 @@ pub fn main() -> Result<(), JsValue> {
     dec_button.set_class_name("btn btn-secondary");
 
     let dec_closure = Closure::wrap(Box::new(move || {
-        unsafe {
-            COUNTER -= 1;
-        }
+        COUNTER.with(|counter| {
+            *counter.borrow_mut() -= 1;
+        });
         let doc = web_sys::window().unwrap().document().unwrap();
         update_counter_display(&doc).unwrap();
     }) as Box<dyn Fn()>);
@@ -77,9 +80,9 @@ pub fn main() -> Result<(), JsValue> {
     reset_button.set_class_name("btn btn-warning");
 
     let reset_closure = Closure::wrap(Box::new(move || {
-        unsafe {
-            COUNTER = 0;
-        }
+        COUNTER.with(|counter| {
+            *counter.borrow_mut() = 0;
+        });
         let doc = web_sys::window().unwrap().document().unwrap();
         update_counter_display(&doc).unwrap();
     }) as Box<dyn Fn()>);
@@ -118,9 +121,9 @@ fn create_element(document: &Document, tag: &str) -> Result<Element, JsValue> {
 
 fn update_counter_display(document: &Document) -> Result<(), JsValue> {
     let display = document.get_element_by_id("counter-display").unwrap();
-    unsafe {
-        display.set_text_content(Some(&format!("Count: {}", COUNTER)));
-    }
+    COUNTER.with(|counter| {
+        display.set_text_content(Some(&format!("Count: {}", *counter.borrow())));
+    });
     Ok(())
 }
 

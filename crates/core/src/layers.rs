@@ -119,7 +119,7 @@ pub mod L4 {
         type Request;
         type Response;
 
-        async fn handle(&self, req: Self::Request) -> Self::Response;
+        fn handle(&self, req: Self::Request) -> impl std::future::Future<Output = Self::Response>;
     }
 }
 
