@@ -14,9 +14,15 @@
     "test:validation": "node test/layer9-validation.js",
     "test:final": "node test/final-validation.js",
     "test:stress": "node test/production-stress-test.js",
+    "test:health": "node test/layer9-health-check.js",
+    "test:ci": "node test/ci-test-suite.js",
+    "validate": "node test/localhost-validator.js",
+    "ultra": "node test/ultra-validator.js",
     "build:example": "cd examples/counter && wasm-pack build --target web --out-dir pkg",
     "serve:example": "cd examples/counter && python3 -m http.server 8080",
-    "dev": "npm run build:example && npm run serve:example"
+    "dev": "node scripts/dev-server.js",
+    "dev:simple": "npm run build:example && npm run serve:example",
+    "health-check": "node test/layer9-health-check.js"
   },
   "repository": {
     "type": "git",
