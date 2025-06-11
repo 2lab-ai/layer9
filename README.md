@@ -1,12 +1,38 @@
 # Layer9: The Web Framework From a Parallel Universe Where Abstractions Make Sense
 
-![Layer9 Banner](assets/layer9-banner.txt)
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║  ██╗      █████╗ ██╗   ██╗███████╗██████╗  █████╗                           ║
+║  ██║     ██╔══██╗╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗                          ║
+║  ██║     ███████║ ╚████╔╝ █████╗  ██████╔╝╚██████║                          ║
+║  ██║     ██╔══██║  ╚██╔╝  ██╔══╝  ██╔══██╗ ╚═══██║                          ║
+║  ███████╗██║  ██║   ██║   ███████╗██║  ██║ █████╔╝                          ║
+║  ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝ ╚════╝                           ║
+║                                                                               ║
+║           The Web Framework That Respects Your Intelligence                   ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
 
 <div align="center">
   
   [![Layer9 Demo](assets/layer9_demo.png)](https://github.com/2lab-ai/layer9)
   
-  ![Product Hunt](assets/product-hunt-badge.txt)
+```
+┌────────────────────────────────────────────────────────┐
+│          🚀 LAUNCHING ON PRODUCT HUNT 🚀               │
+│                                                        │
+│         Layer9: The Framework That Makes               │
+│           Next.js Look Like a Mistake                  │
+│                                                        │
+│    ⭐ Hunt us if you're tired of hydration errors     │
+│    ⭐ Hunt us if Claude refuses to help you           │
+│    ⭐ Hunt us if you believe in proper abstractions   │
+│                                                        │
+│            #1 Product of the Multiverse                │
+└────────────────────────────────────────────────────────┘
+```
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
@@ -26,11 +52,13 @@
 
 While attempting to build a simple landing page for [2lab.ai](https://2lab.ai) using your "Next.js" technology, we made a shocking discovery:
 
-**Claude Code** (an advanced AI from your timeline) could effortlessly manage and enhance **95,000 lines** of Rust code, but struggled with less than **10,000 lines** of Next.js.
+**Claude Code Opus 4** (an advanced AI from your timeline) could effortlessly manage and enhance **95,000 lines** of Rust code in our [HAL9 AI Agent project](https://github.com/2lab-ai/2hal9) (currently private, AGPL release coming soon), but struggled with less than **10,000 lines** of Next.js.
 
 ### 🤯 Let that sink in:
-- **95,000 lines of Rust**: Claude says "Easy, what else?"
-- **<10,000 lines of Next.js**: Claude says "I give up, this makes no sense" 
+- **95,000 lines of HAL9 (Rust)**: Claude Opus 4 says "Easy, what else?"
+- **<10,000 lines of Next.js**: Claude Opus 4 says "I give up, this makes no sense"
+
+> 📧 **Note**: Interested in early access to HAL9's code? We're looking for code reviewers before the public AGPL release. Contact: **z@2lab.ai** 
 
 This paradox led to only one logical conclusion: **Next.js violates the fundamental laws of hierarchical abstraction that govern stable universes.**
 
@@ -38,8 +66,8 @@ This paradox led to only one logical conclusion: **Next.js violates the fundamen
 
 ```
 📊 The Evidence:
-- Rust Codebase: 95,000 lines ✅ Claude handles with ease
-- Next.js Codebase: <10,000 lines ❌ Claude experiences existential crisis
+- HAL9 (Rust) Codebase: 95,000 lines ✅ Claude Opus 4 handles with ease
+- Next.js Codebase: <10,000 lines ❌ Claude Opus 4 experiences existential crisis
 - Conclusion: Next.js is an anti-pattern to intelligence itself
 ```
 
@@ -51,7 +79,41 @@ Rather than continue suffering in your dimension's flawed paradigm, we decided t
 
 Layer9 is a 9-layer hierarchical web framework written in Rust that actually makes sense. Each layer has a clear purpose, unlike certain frameworks that shall remain Next.js.
 
-![Architecture](assets/architecture.txt)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          LAYER 9 ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Layer 9: Router          ┌─────────────┐                         │
+│  ├─ Fast Pattern Match    │   Browser   │                         │
+│  └─ Zero Allocation       └──────┬──────┘                         │
+│                                  │                                 │
+│  Layer 8: State                  ▼                                 │
+│  ├─ Reactive Updates      ┌─────────────┐                         │
+│  └─ Type-Safe Store       │    WASM     │                         │
+│                           └──────┬──────┘                         │
+│  Layer 7: Components             │                                 │
+│  ├─ Composable UI         ┌──────▼──────┐                         │
+│  └─ Virtual DOM           │   Layer9    │                         │
+│                           │  Framework  │                         │
+│  Layer 6: Middleware      └──────┬──────┘                         │
+│  ├─ Auth & Security              │                                 │
+│  └─ Request Pipeline      ┌──────▼──────┐                         │
+│                           │    Rust     │                         │
+│  Layer 5: API             │   Backend   │                         │
+│  ├─ REST/GraphQL          └─────────────┘                         │
+│  └─ Type Generation                                               │
+│                                                                     │
+│  Layer 4: Database        "Each layer knows its place,            │
+│  ├─ Query Builder          unlike certain JS frameworks"          │
+│  └─ Migrations                                                    │
+│                                                                     │
+│  Layer 3: Cache                                                   │
+│  Layer 2: WebSocket                                               │
+│  Layer 1: SSR/Hydration                                           │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ### Key Features That Your Dimension Lacks:
 
@@ -63,7 +125,40 @@ Layer9 is a 9-layer hierarchical web framework written in Rust that actually mak
 
 ## 📊 Performance Metrics From Our Dimension
 
-![Performance Comparison](assets/performance-comparison.txt)
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                    PERFORMANCE COMPARISON                          │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  First Paint (ms)                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ Layer9    ████ 44ms                                         │ │
+│  │ Next.js   ████████████████████ 380ms                       │ │
+│  │ React     ██████████████ 250ms                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                    │
+│  Bundle Size (KB)                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ Layer9    ██ 45KB (WASM)                                    │ │
+│  │ Next.js   ████████████████████████████ 450KB               │ │
+│  │ React     ████████████████ 300KB                           │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                    │
+│  Memory Usage (MB)                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ Layer9    ██ 8MB                                            │ │
+│  │ Next.js   ████████████████████ 120MB                       │ │
+│  │ React     ████████████ 75MB                                │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                    │
+│  Lines of Code to Manage 10K Project                              │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ Layer9    ████████████ Claude handles 95K lines easily      │ │
+│  │ Next.js   ██ Claude fails at <10K lines                    │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+```
 
 <div align="center">
   <img src="assets/layer9_code_metric.png" alt="Layer9 Code Metrics" width="600"/>
@@ -82,7 +177,35 @@ This framework was materialized through an unprecedented collaboration:
   - ⏱️ ~2 hours of compute time
   - 😤 1 developer's rage against Next.js
 
-![Development Stats](assets/development-stats.txt)
+```
+┌──────────────────────────────────────────────────────────────┐
+│              LAYER9 DEVELOPMENT STATISTICS                   │
+│                                                              │
+│  Created by: 1 Angry Developer + 1 AI                       │
+│  Time: 2 Hours (Human Time) / ∞ Hours (AI Time)            │
+│                                                              │
+│  💰 Total Cost: $408                                        │
+│  🔢 Tokens Used: 200,000,000                                │
+│  🧠 Cognitive Load Reduced: 99.9%                           │
+│  😤 Next.js Frustration Converted: 100%                     │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Token Usage Visualization                           │   │
+│  │                                                     │   │
+│  │ Design     ████ 20M                                │   │
+│  │ Core       ████████████████████ 80M                │   │
+│  │ Features   ████████████ 50M                        │   │
+│  │ Testing    ████████ 30M                            │   │
+│  │ Docs       ████ 20M                                │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                              │
+│  Cost Breakdown:                                             │
+│  • Claude API: $408 (Worth every penny)                     │
+│  • Developer Sanity: Priceless                              │
+│  • Next.js Therapy: $0 (No longer needed)                   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
 
 <div align="center">
   <img src="assets/layer9_claude_code_api_usage.png" alt="Claude Code API Usage" width="600"/>
@@ -90,7 +213,44 @@ This framework was materialized through an unprecedented collaboration:
 
 ## 💻 Code That Respects Your Neurons
 
-![Code Showcase](assets/code-showcase.txt)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     LAYER9 vs NEXT.JS                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Next.js (Cognitive Overload Edition):                             │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ // Where does this run? Server? Client? Edge? Who knows?      │ │
+│  │ export async function getServerSideProps() { ... }             │ │
+│  │                                                                 │ │
+│  │ // Is this cached? When? How? ¯\_(ツ)_/¯                      │ │
+│  │ export const revalidate = 60                                   │ │
+│  │                                                                 │ │
+│  │ // Good luck debugging this in production                      │ │
+│  │ const MyPage = dynamic(() => import('./somewhere'), {          │ │
+│  │   ssr: false,                                                  │ │
+│  │   loading: () => <p>Loading...</p>                             │ │
+│  │ })                                                             │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  Layer9 (Clarity Through Hierarchy):                               │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ #[component]                                                   │ │
+│  │ pub fn Counter() -> Html {                                     │ │
+│  │     let count = use_state(|| 0);                               │ │
+│  │                                                                 │ │
+│  │     html! {                                                    │ │
+│  │         <div>                                                  │ │
+│  │             <h1>"Count: {count}"</h1>                         │ │
+│  │             <button onclick={|_| count += 1}>"+1"</button>    │ │
+│  │         </div>                                                 │ │
+│  │     }                                                          │ │
+│  │ }                                                              │ │
+│  │ // That's it. No magic. It just works.                        │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ## 🏃 Quick Start (For Earthlings)
 
@@ -122,7 +282,7 @@ Our test suite includes self-healing capabilities because we realized your Earth
 ## 🌟 Why Layer9 Will Change Your Dimension
 
 1. **Clear Abstractions**: Each of the 9 layers has ONE job (revolutionary, we know)
-2. **AI-Friendly**: Claude can actually understand and modify the codebase
+2. **AI-Friendly**: Claude Opus 4 can actually understand and modify the codebase
 3. **Performance**: Makes Next.js look like it's running on a potato
 4. **Developer Experience**: No more debugging hydration mismatches at 3 AM
 5. **Future Proof**: Built with trans-dimensional best practices
@@ -231,7 +391,7 @@ Layer9 is our gift to your world. Use it wisely.
 
 ### 🏆 Achievements Unlocked
 
-- ✅ Made Claude Code happy again
+- ✅ Made Claude Code Opus 4 happy again
 - ✅ Reduced cognitive load by 99.9%
 - ✅ Proved Next.js is an anti-pattern
 - ✅ Built a framework in 2 hours that works better than one built in years
@@ -244,7 +404,7 @@ If Layer9 saved your sanity, tell others:
 
 ```
 "I was lost in Next.js hell, then Layer9 showed me the light. 
-Now Claude and I build features in harmony. #Layer9 #RustWebDev"
+Now Claude Opus 4 and I build features in harmony. #Layer9 #RustWebDev"
 ```
 
 ---
@@ -252,6 +412,8 @@ Now Claude and I build features in harmony. #Layer9 #RustWebDev"
 <sub>🏗️ Designed by **Zhugehyuk** | 🤖 Coded by **Claude Code Opus 4** | 🛸 10,000 lines of interdimensional Rust</sub>
 
 <sub>Special thanks to the cosmic forces that led to Next.js frustration, without which this framework would not exist</sub>
+
+<sub>Also building: **HAL9** - 95,000 lines of Rust AI Agent (AGPL soon™) | Early reviewers: z@2lab.ai</sub>
 
 <sub>If you're still using Next.js after reading this... there's a support group on Thursdays</sub>
 
