@@ -1,0 +1,33 @@
+┌─────────────────────────────────────────────────────────────────────┐
+│                          LAYER 9 ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Layer 9: Router          ┌─────────────┐                         │
+│  ├─ Fast Pattern Match    │   Browser   │                         │
+│  └─ Zero Allocation       └──────┬──────┘                         │
+│                                  │                                 │
+│  Layer 8: State                  ▼                                 │
+│  ├─ Reactive Updates      ┌─────────────┐                         │
+│  └─ Type-Safe Store       │    WASM     │                         │
+│                           └──────┬──────┘                         │
+│  Layer 7: Components             │                                 │
+│  ├─ Composable UI         ┌──────▼──────┐                         │
+│  └─ Virtual DOM           │   Layer9    │                         │
+│                           │  Framework  │                         │
+│  Layer 6: Middleware      └──────┬──────┘                         │
+│  ├─ Auth & Security              │                                 │
+│  └─ Request Pipeline      ┌──────▼──────┐                         │
+│                           │    Rust     │                         │
+│  Layer 5: API             │   Backend   │                         │
+│  ├─ REST/GraphQL          └─────────────┘                         │
+│  └─ Type Generation                                               │
+│                                                                     │
+│  Layer 4: Database        "Each layer knows its place,            │
+│  ├─ Query Builder          unlike certain JS frameworks"          │
+│  └─ Migrations                                                    │
+│                                                                     │
+│  Layer 3: Cache                                                   │
+│  Layer 2: WebSocket                                               │
+│  Layer 1: SSR/Hydration                                           │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘

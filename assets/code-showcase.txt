@@ -1,0 +1,36 @@
+┌─────────────────────────────────────────────────────────────────────┐
+│                     LAYER9 vs NEXT.JS                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Next.js (Cognitive Overload Edition):                             │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ // Where does this run? Server? Client? Edge? Who knows?      │ │
+│  │ export async function getServerSideProps() { ... }             │ │
+│  │                                                                 │ │
+│  │ // Is this cached? When? How? ¯\_(ツ)_/¯                      │ │
+│  │ export const revalidate = 60                                   │ │
+│  │                                                                 │ │
+│  │ // Good luck debugging this in production                      │ │
+│  │ const MyPage = dynamic(() => import('./somewhere'), {          │ │
+│  │   ssr: false,                                                  │ │
+│  │   loading: () => <p>Loading...</p>                             │ │
+│  │ })                                                             │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  Layer9 (Clarity Through Hierarchy):                               │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ #[component]                                                   │ │
+│  │ pub fn Counter() -> Html {                                     │ │
+│  │     let count = use_state(|| 0);                               │ │
+│  │                                                                 │ │
+│  │     html! {                                                    │ │
+│  │         <div>                                                  │ │
+│  │             <h1>"Count: {count}"</h1>                         │ │
+│  │             <button onclick={|_| count += 1}>"+1"</button>    │ │
+│  │         </div>                                                 │ │
+│  │     }                                                          │ │
+│  │ }                                                              │ │
+│  │ // That's it. No magic. It just works.                        │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
