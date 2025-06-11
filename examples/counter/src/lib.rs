@@ -34,7 +34,10 @@ pub fn main() -> Result<(), JsValue> {
     // Create counter display
     let counter_display = create_element(&document, "p")?;
     counter_display.set_id("counter-display");
-    update_counter_display(&document)?;
+    // Set initial counter value directly
+    COUNTER.with(|counter| {
+        counter_display.set_text_content(Some(&format!("Count: {}", *counter.borrow())));
+    });
     container.append_child(&counter_display)?;
 
     // Create button container
