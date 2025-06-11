@@ -1,0 +1,45 @@
+[package]
+name = "warp-framework"
+version = "0.1.0"
+edition = "2021"
+authors = ["2lab.ai"]
+description = "Web Architecture Rust Platform - Next.js performance with Rust's hierarchical abstraction"
+license = "MIT"
+
+[workspace]
+members = [
+    "crates/core",
+    "crates/macro",
+    "crates/runtime",
+    "crates/cli",
+]
+
+[dependencies]
+warp-core = { path = "crates/core" }
+warp-macro = { path = "crates/macro" }
+warp-runtime = { path = "crates/runtime" }
+
+# Web essentials
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3"
+js-sys = "0.3"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.6"
+
+# HTTP
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "compression"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
