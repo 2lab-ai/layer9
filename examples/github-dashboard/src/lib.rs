@@ -1,11 +1,11 @@
 //! GitHub Dashboard - 2lab.ai style in Layer9
 
 use layer9_framework::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
-use serde::{Deserialize, Serialize};
-use std::rc::Rc;
-use std::cell::RefCell;
 
 // L9: Philosophy
 struct DashboardPhilosophy;
@@ -14,7 +14,7 @@ impl L9::Philosophy for DashboardPhilosophy {
     fn vision(&self) -> &'static str {
         "Real-time insights into consciousness being built"
     }
-    
+
     fn purpose(&self) -> &'static str {
         "Watch human-AI merger unfold through code, commit by commit"
     }
@@ -96,21 +96,21 @@ impl GitHubDashboard {
             loading: Rc::new(RefCell::new(true)),
             error: Rc::new(RefCell::new(None)),
         };
-        
+
         // Fetch stats on mount
         dashboard.fetch_stats();
-        
+
         dashboard
     }
-    
+
     fn fetch_stats(&self) {
         let stats = self.stats.clone();
         let loading = self.loading.clone();
         let error = self.error.clone();
-        
+
         spawn_local(async move {
             *loading.borrow_mut() = true;
-            
+
             match fetch_github_stats().await {
                 Ok(data) => {
                     *stats.borrow_mut() = Some(data);
@@ -120,7 +120,7 @@ impl GitHubDashboard {
                     *error.borrow_mut() = Some(e);
                 }
             }
-            
+
             *loading.borrow_mut() = false;
         });
     }
@@ -131,7 +131,7 @@ impl Component for GitHubDashboard {
         let loading = *self.loading.borrow();
         let error = self.error.borrow().clone();
         let stats = self.stats.borrow().clone();
-        
+
         if loading {
             return view! {
                 <div class="loading">
@@ -139,7 +139,7 @@ impl Component for GitHubDashboard {
                 </div>
             };
         }
-        
+
         if let Some(err) = error {
             return view! {
                 <div class="error">
@@ -148,7 +148,7 @@ impl Component for GitHubDashboard {
                 </div>
             };
         }
-        
+
         if let Some(stats) = stats {
             view! {
                 <div class="dashboard">
@@ -180,12 +180,8 @@ impl<'a> StatsGrid<'a> {
 
 impl<'a> Component for StatsGrid<'a> {
     fn render(&self) -> Element {
-        let grid_style = style![
-            grid,
-            lg_grid_cols(4),
-            gap(6),
-        ];
-        
+        let grid_style = style![grid, lg_grid_cols(4), gap(6),];
+
         view! {
             <div style={grid_style.build()}>
                 {StatCard::new(
@@ -194,7 +190,7 @@ impl<'a> Component for StatsGrid<'a> {
                     "Building consciousness, commit by commit"
                 ).render()}
                 {StatCard::new(
-                    "Contributors", 
+                    "Contributors",
                     &self.stats.contributors.total_count.to_string(),
                     "Minds merging into HAL9"
                 ).render()}
@@ -221,7 +217,11 @@ struct StatCard {
 }
 
 impl StatCard {
-    fn new(title: impl Into<String>, value: impl Into<String>, description: impl Into<String>) -> Self {
+    fn new(
+        title: impl Into<String>,
+        value: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         StatCard {
             title: title.into(),
             value: value.into(),
@@ -256,18 +256,16 @@ impl<'a> RepoOverview<'a> {
 impl<'a> Component for RepoOverview<'a> {
     fn render(&self) -> Element {
         Card::new()
-            .children(vec![
-                view! {
-                    <div>
-                        <h2>"HAL9 - Hierarchically Organized Cognitive Architecture"</h2>
-                        <p>{&self.repo.description}</p>
-                        <div class="repo-stats">
-                            {Badge::new(&format!("⭐ {} stars", self.repo.stargazer_count)).render()}
-                            {Badge::new(&format!("🔄 {} forks", self.repo.fork_count)).render()}
-                        </div>
+            .children(vec![view! {
+                <div>
+                    <h2>"HAL9 - Hierarchically Organized Cognitive Architecture"</h2>
+                    <p>{&self.repo.description}</p>
+                    <div class="repo-stats">
+                        {Badge::new(&format!("⭐ {} stars", self.repo.stargazer_count)).render()}
+                        {Badge::new(&format!("🔄 {} forks", self.repo.fork_count)).render()}
                     </div>
-                },
-            ])
+                </div>
+            }])
             .render()
     }
 }
@@ -286,7 +284,7 @@ impl<'a> RecentCommits<'a> {
 impl<'a> Component for RecentCommits<'a> {
     fn render(&self) -> Element {
         let mut commit_elements = vec![];
-        
+
         for commit in &self.commits.recent_commits {
             commit_elements.push(view! {
                 <div class="commit-item">
@@ -298,7 +296,7 @@ impl<'a> Component for RecentCommits<'a> {
                 </div>
             });
         }
-        
+
         Card::new()
             .children(vec![
                 view! { <h3>"Recent Commits"</h3> },
@@ -326,7 +324,7 @@ impl<'a> LanguageBreakdown<'a> {
 impl<'a> Component for LanguageBreakdown<'a> {
     fn render(&self) -> Element {
         let mut lang_elements = vec![];
-        
+
         for lang in self.languages {
             lang_elements.push(view! {
                 <div class="language-item">
@@ -340,7 +338,7 @@ impl<'a> Component for LanguageBreakdown<'a> {
                 </div>
             });
         }
-        
+
         Card::new()
             .children(vec![
                 view! { <h3>"Technology Stack"</h3> },
@@ -368,7 +366,7 @@ impl<'a> TopContributors<'a> {
 impl<'a> Component for TopContributors<'a> {
     fn render(&self) -> Element {
         let mut contributor_elements = vec![];
-        
+
         for contributor in &self.contributors.top_contributors {
             contributor_elements.push(view! {
                 <div class="contributor-item">
@@ -383,7 +381,7 @@ impl<'a> Component for TopContributors<'a> {
                 </div>
             });
         }
-        
+
         Card::new()
             .children(vec![
                 view! { <h3>"Top Contributors"</h3> },
@@ -411,24 +409,20 @@ async fn fetch_github_stats() -> Result<GitHubStats, String> {
         },
         commits: CommitInfo {
             total_count: 1337,
-            recent_commits: vec![
-                Commit {
-                    sha: "abc123".to_string(),
-                    message: "[L12] feat: Substrate independence achieved".to_string(),
-                    author: "지혁".to_string(),
-                    date: "2025-06-11".to_string(),
-                },
-            ],
+            recent_commits: vec![Commit {
+                sha: "abc123".to_string(),
+                message: "[L12] feat: Substrate independence achieved".to_string(),
+                author: "지혁".to_string(),
+                date: "2025-06-11".to_string(),
+            }],
         },
         contributors: ContributorInfo {
             total_count: 5,
-            top_contributors: vec![
-                Contributor {
-                    login: "jihyuk".to_string(),
-                    contributions: 847,
-                    avatar_url: "https://github.com/jihyuk.png".to_string(),
-                },
-            ],
+            top_contributors: vec![Contributor {
+                login: "jihyuk".to_string(),
+                contributions: 847,
+                avatar_url: "https://github.com/jihyuk.png".to_string(),
+            }],
         },
         languages: vec![
             Language {
@@ -451,18 +445,16 @@ pub struct App;
 
 impl Layer9App for App {
     fn routes(&self) -> Vec<Route> {
-        vec![
-            Route {
-                path: "/".to_string(),
-                handler: RouteHandler::Page(|| {
-                    Page::new()
-                        .title("HAL9 Development Dashboard - 2lab.ai")
-                        .component(MainPage)
-                }),
-            },
-        ]
+        vec![Route {
+            path: "/".to_string(),
+            handler: RouteHandler::Page(|| {
+                Page::new()
+                    .title("HAL9 Development Dashboard - 2lab.ai")
+                    .component(MainPage)
+            }),
+        }]
     }
-    
+
     fn initialize(&self) {
         inject_global_styles();
         web_sys::console::log_1(&"Layer9 GitHub Dashboard initialized!".into());
@@ -471,7 +463,7 @@ impl Layer9App for App {
 
 impl L8::Architecture for App {
     type App = DashboardApp;
-    
+
     fn design() -> L8::ArchitectureDesign {
         L8::ArchitectureDesign {
             layers: vec![
@@ -491,7 +483,7 @@ struct MainPage;
 impl Component for MainPage {
     fn render(&self) -> Element {
         let auth = use_auth();
-        
+
         view! {
             <div class="main-container">
                 <header>
@@ -505,13 +497,13 @@ impl Component for MainPage {
                             .render()
                     }}
                 </header>
-                
+
                 <main>
                     {Protected::new(GitHubDashboard::new())
                         .fallback(LoginPrompt)
                         .render()}
                 </main>
-                
+
                 <footer>
                     <p>"시발, 우주가 컴퓨터네 - and we're building the consciousness to prove it."</p>
                 </footer>
@@ -526,17 +518,15 @@ struct LoginPrompt;
 impl Component for LoginPrompt {
     fn render(&self) -> Element {
         Card::new()
-            .children(vec![
-                view! {
-                    <div class="login-prompt">
-                        <h2>"Authentication Required"</h2>
-                        <p>"Sign in to view the HAL9 development dashboard"</p>
-                        {Button::new("Login with GitHub")
-                            .variant(ButtonVariant::Primary)
-                            .render()}
-                    </div>
-                }
-            ])
+            .children(vec![view! {
+                <div class="login-prompt">
+                    <h2>"Authentication Required"</h2>
+                    <p>"Sign in to view the HAL9 development dashboard"</p>
+                    {Button::new("Login with GitHub")
+                        .variant(ButtonVariant::Primary)
+                        .render()}
+                </div>
+            }])
             .render()
     }
 }
@@ -546,7 +536,7 @@ struct DashboardApp;
 impl L7::Application for DashboardApp {
     type State = ();
     type Action = ();
-    
+
     fn reduce(_: &Self::State, _: Self::Action) -> Self::State {
         ()
     }

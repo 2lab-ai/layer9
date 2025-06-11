@@ -1,12 +1,10 @@
 //! Global State Management - L6
 
-use std::rc::Rc;
+use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::any::{Any, TypeId};
-use wasm_bindgen::prelude::*;
+use std::rc::Rc;
 
-/// Global state store
 thread_local! {
     static STORE: RefCell<Store> = RefCell::new(Store::new());
 }
@@ -24,11 +22,11 @@ impl Store {
             listeners: HashMap::new(),
         }
     }
-    
+
     fn set<T: 'static>(&mut self, value: T) {
         let type_id = TypeId::of::<T>();
         self.state.insert(type_id, Box::new(value));
-        
+
         // Notify listeners
         if let Some(listeners) = self.listeners.get(&type_id) {
             for listener in listeners {
@@ -36,23 +34,24 @@ impl Store {
             }
         }
     }
-    
+
     fn get<T: 'static + Clone>(&self) -> Option<T> {
         let type_id = TypeId::of::<T>();
-        self.state.get(&type_id)
+        self.state
+            .get(&type_id)
             .and_then(|any| any.downcast_ref::<T>())
             .cloned()
     }
-    
+
     fn subscribe<T: 'static>(&mut self, listener: Box<dyn Fn()>) -> SubscriptionId {
         let type_id = TypeId::of::<T>();
         let listeners = self.listeners.entry(type_id).or_insert_with(Vec::new);
         let id = listeners.len();
         listeners.push(listener);
-        
+
         SubscriptionId { type_id, id }
     }
-    
+
     fn unsubscribe(&mut self, sub_id: SubscriptionId) {
         if let Some(listeners) = self.listeners.get_mut(&sub_id.type_id) {
             if sub_id.id < listeners.len() {
@@ -73,7 +72,7 @@ pub fn create_atom<T: 'static + Clone + Default>(initial: T) -> Atom<T> {
     STORE.with(|store| {
         store.borrow_mut().set(initial);
     });
-    
+
     Atom {
         _phantom: std::marker::PhantomData,
     }
@@ -88,22 +87,20 @@ impl<T: 'static + Clone> Atom<T> {
     pub fn get(&self) -> Option<T> {
         STORE.with(|store| store.borrow().get::<T>())
     }
-    
+
     pub fn set(&self, value: T) {
         STORE.with(|store| store.borrow_mut().set(value));
     }
-    
+
     pub fn update(&self, f: impl FnOnce(&mut T)) {
         if let Some(mut value) = self.get() {
             f(&mut value);
             self.set(value);
         }
     }
-    
+
     pub fn subscribe(&self, listener: impl Fn() + 'static) -> SubscriptionId {
-        STORE.with(|store| {
-            store.borrow_mut().subscribe::<T>(Box::new(listener))
-        })
+        STORE.with(|store| store.borrow_mut().subscribe::<T>(Box::new(listener)))
     }
 }
 
@@ -111,12 +108,12 @@ impl<T: 'static + Clone> Atom<T> {
 pub fn use_atom<T: 'static + Clone>(atom: &Atom<T>) -> AtomHandle<T> {
     let value = atom.get();
     let update_trigger = use_update();
-    
+
     // Subscribe to changes
     let sub_id = atom.subscribe(move || {
         update_trigger();
     });
-    
+
     // Cleanup on unmount
     use_effect(move || {
         move || {
@@ -125,7 +122,7 @@ pub fn use_atom<T: 'static + Clone>(atom: &Atom<T>) -> AtomHandle<T> {
             });
         }
     });
-    
+
     AtomHandle {
         value,
         atom: atom.clone(),
@@ -142,11 +139,11 @@ impl<T: Clone> AtomHandle<T> {
     pub fn get(&self) -> Option<&T> {
         self.value.as_ref()
     }
-    
+
     pub fn set(&self, value: T) {
         self.atom.set(value);
     }
-    
+
     pub fn update(&self, f: impl FnOnce(&mut T)) {
         self.atom.update(f);
     }
@@ -165,7 +162,7 @@ impl<T: 'static + Clone, U: 'static + Clone> Selector<T, U> {
             selector: Rc::new(selector),
         }
     }
-    
+
     pub fn get(&self) -> Option<U> {
         self.source.get().map(|value| (self.selector)(&value))
     }
@@ -173,16 +170,16 @@ impl<T: 'static + Clone, U: 'static + Clone> Selector<T, U> {
 
 /// Use selector hook
 pub fn use_selector<T: 'static + Clone, U: 'static + Clone>(
-    selector: &Selector<T, U>
+    selector: &Selector<T, U>,
 ) -> Option<U> {
     let value = selector.get();
     let update_trigger = use_update();
-    
+
     // Subscribe to source changes
     let sub_id = selector.source.subscribe(move || {
         update_trigger();
     });
-    
+
     // Cleanup
     use_effect(move || {
         move || {
@@ -191,7 +188,7 @@ pub fn use_selector<T: 'static + Clone, U: 'static + Clone>(
             });
         }
     });
-    
+
     value
 }
 
@@ -201,21 +198,21 @@ pub struct ReducerStore<S, A> {
     reducer: Rc<dyn Fn(&S, A) -> S>,
 }
 
-impl<S: 'static + Clone, A: 'static> ReducerStore<S, A> {
+impl<S: 'static + Clone + Default, A: 'static> ReducerStore<S, A> {
     pub fn new(initial: S, reducer: impl Fn(&S, A) -> S + 'static) -> Self {
         ReducerStore {
             state: create_atom(initial),
             reducer: Rc::new(reducer),
         }
     }
-    
+
     pub fn dispatch(&self, action: A) {
         if let Some(current) = self.state.get() {
             let new_state = (self.reducer)(&current, action);
             self.state.set(new_state);
         }
     }
-    
+
     pub fn get_state(&self) -> Option<S> {
         self.state.get()
     }
@@ -223,15 +220,15 @@ impl<S: 'static + Clone, A: 'static> ReducerStore<S, A> {
 
 /// Use reducer hook
 pub fn use_reducer<S: 'static + Clone, A: 'static>(
-    store: &ReducerStore<S, A>
+    store: &ReducerStore<S, A>,
 ) -> (Option<S>, impl Fn(A)) {
     let state = use_atom(&store.state);
     let store_clone = store.clone();
-    
+
     let dispatch = move |action: A| {
         store_clone.dispatch(action);
     };
-    
+
     (state.get().cloned(), dispatch)
 }
 
@@ -243,9 +240,13 @@ fn use_update() -> impl Fn() {
     }
 }
 
-fn use_effect(effect: impl FnOnce() -> impl FnOnce()) {
+pub fn use_effect<F, C>(effect: F)
+where
+    F: FnOnce() -> C,
+    C: FnOnce() + 'static,
+{
     // Run effect and return cleanup
-    let cleanup = effect();
+    let _cleanup = effect();
     // Store cleanup for later
 }
 
@@ -300,10 +301,10 @@ pub fn create_app_store() -> ReducerStore<AppState, AppAction> {
         theme: Theme::Dark,
         count: 0,
     };
-    
+
     ReducerStore::new(initial, |state, action| {
         let mut new_state = state.clone();
-        
+
         match action {
             AppAction::SetUser(user) => new_state.user = user,
             AppAction::ToggleTheme => {
@@ -315,7 +316,7 @@ pub fn create_app_store() -> ReducerStore<AppState, AppAction> {
             AppAction::Increment => new_state.count += 1,
             AppAction::Decrement => new_state.count -= 1,
         }
-        
+
         new_state
     })
 }

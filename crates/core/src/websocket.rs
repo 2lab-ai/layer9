@@ -1,12 +1,11 @@
 //! WebSocket Support - L4
 
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::closure::Closure;
-use web_sys::{WebSocket, MessageEvent, CloseEvent, ErrorEvent};
-use std::rc::Rc;
-use std::cell::RefCell;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::prelude::*;
+use web_sys::{CloseEvent, ErrorEvent, MessageEvent, WebSocket};
 
 /// WebSocket connection state
 #[derive(Clone, PartialEq)]
@@ -58,7 +57,7 @@ impl WsConnection {
             on_error: None,
             on_close: None,
         }));
-        
+
         let mut conn = WsConnection {
             ws: None,
             state: state.clone(),
@@ -66,11 +65,11 @@ impl WsConnection {
             handlers: handlers.clone(),
             reconnect_timer: Rc::new(RefCell::new(None)),
         };
-        
+
         conn.connect()?;
         Ok(conn)
     }
-    
+
     fn connect(&mut self) -> Result<(), JsValue> {
         // Create WebSocket
         let ws = if self.config.protocols.is_empty() {
@@ -82,46 +81,46 @@ impl WsConnection {
             }
             WebSocket::new_with_str_sequence(&self.config.url, &protocols)?
         };
-        
+
         // Set binary type
         ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
-        
+
         // Set up event handlers
         self.setup_handlers(&ws)?;
-        
+
         self.ws = Some(ws);
         Ok(())
     }
-    
+
     fn setup_handlers(&self, ws: &WebSocket) -> Result<(), JsValue> {
         let state = self.state.clone();
         let handlers = self.handlers.clone();
         let config = self.config.clone();
-        let reconnect_timer = self.reconnect_timer.clone();
-        
+        let _reconnect_timer = self.reconnect_timer.clone();
+
         // On open
         let on_open = {
             let state = state.clone();
             let handlers = handlers.clone();
-            
+
             Closure::<dyn FnMut()>::new(move || {
                 *state.borrow_mut() = WsState::Connected;
-                
+
                 if let Some(handler) = &handlers.borrow().on_open {
                     handler();
                 }
-                
+
                 // Start ping interval if configured
                 // TODO: Implement ping/pong
             })
         };
         ws.set_onopen(Some(on_open.as_ref().unchecked_ref()));
         on_open.forget();
-        
+
         // On message
         let on_message = {
             let handlers = handlers.clone();
-            
+
             Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
                 if let Some(handler) = &handlers.borrow().on_message {
                     if let Ok(text) = e.data().dyn_into::<js_sys::JsString>() {
@@ -136,16 +135,16 @@ impl WsConnection {
         };
         ws.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
         on_message.forget();
-        
+
         // On error
         let on_error = {
             let state = state.clone();
             let handlers = handlers.clone();
-            
+
             Closure::<dyn FnMut(_)>::new(move |e: ErrorEvent| {
                 let error_msg = format!("WebSocket error: {}", e.message());
                 *state.borrow_mut() = WsState::Error(error_msg.clone());
-                
+
                 if let Some(handler) = &handlers.borrow().on_error {
                     handler(error_msg);
                 }
@@ -153,19 +152,19 @@ impl WsConnection {
         };
         ws.set_onerror(Some(on_error.as_ref().unchecked_ref()));
         on_error.forget();
-        
+
         // On close
         let on_close = {
             let state = state.clone();
             let handlers = handlers.clone();
-            
+
             Closure::<dyn FnMut(_)>::new(move |e: CloseEvent| {
                 *state.borrow_mut() = WsState::Disconnected;
-                
+
                 if let Some(handler) = &handlers.borrow().on_close {
                     handler(e.code(), e.reason());
                 }
-                
+
                 // Handle reconnection
                 if config.reconnect && e.code() != 1000 {
                     // TODO: Implement reconnection logic
@@ -174,10 +173,10 @@ impl WsConnection {
         };
         ws.set_onclose(Some(on_close.as_ref().unchecked_ref()));
         on_close.forget();
-        
+
         Ok(())
     }
-    
+
     pub fn send(&self, message: WsMessage) -> Result<(), JsValue> {
         if let Some(ws) = &self.ws {
             match message {
@@ -191,40 +190,39 @@ impl WsConnection {
             Err(JsValue::from_str("WebSocket not connected"))
         }
     }
-    
+
     pub fn send_json<T: Serialize>(&self, data: &T) -> Result<(), JsValue> {
-        let json = serde_json::to_string(data)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let json = serde_json::to_string(data).map_err(|e| JsValue::from_str(&e.to_string()))?;
         self.send(WsMessage::Text(json))
     }
-    
+
     pub fn close(&self) -> Result<(), JsValue> {
         if let Some(ws) = &self.ws {
             ws.close()?;
         }
         Ok(())
     }
-    
+
     pub fn state(&self) -> WsState {
         self.state.borrow().clone()
     }
-    
-    pub fn on_open(mut self, handler: impl Fn() + 'static) -> Self {
+
+    pub fn on_open(self, handler: impl Fn() + 'static) -> Self {
         self.handlers.borrow_mut().on_open = Some(Box::new(handler));
         self
     }
-    
-    pub fn on_message(mut self, handler: impl Fn(WsMessage) + 'static) -> Self {
+
+    pub fn on_message(self, handler: impl Fn(WsMessage) + 'static) -> Self {
         self.handlers.borrow_mut().on_message = Some(Box::new(handler));
         self
     }
-    
-    pub fn on_error(mut self, handler: impl Fn(String) + 'static) -> Self {
+
+    pub fn on_error(self, handler: impl Fn(String) + 'static) -> Self {
         self.handlers.borrow_mut().on_error = Some(Box::new(handler));
         self
     }
-    
-    pub fn on_close(mut self, handler: impl Fn(u16, String) + 'static) -> Self {
+
+    pub fn on_close(self, handler: impl Fn(u16, String) + 'static) -> Self {
         self.handlers.borrow_mut().on_close = Some(Box::new(handler));
         self
     }
@@ -240,9 +238,9 @@ pub fn use_websocket(url: impl Into<String>) -> Result<WsHandle, JsValue> {
         max_reconnect_attempts: 5,
         ping_interval: Some(30000),
     };
-    
+
     let conn = WsConnection::new(config)?;
-    
+
     Ok(WsHandle {
         conn: Rc::new(conn),
     })
@@ -257,15 +255,15 @@ impl WsHandle {
     pub fn send(&self, message: WsMessage) -> Result<(), JsValue> {
         self.conn.send(message)
     }
-    
+
     pub fn send_json<T: Serialize>(&self, data: &T) -> Result<(), JsValue> {
         self.conn.send_json(data)
     }
-    
+
     pub fn state(&self) -> WsState {
         self.conn.state()
     }
-    
+
     pub fn close(&self) -> Result<(), JsValue> {
         self.conn.close()
     }
@@ -282,22 +280,22 @@ impl<T: for<'de> Deserialize<'de> + Clone + 'static> RealtimeSubscription<T> {
     pub fn new(topic: impl Into<String>, ws: WsHandle) -> Self {
         let topic = topic.into();
         let data = Rc::new(RefCell::new(None));
-        
+
         // Subscribe to topic
         let subscribe_msg = serde_json::json!({
             "type": "subscribe",
             "topic": &topic,
         });
-        
+
         let _ = ws.send_json(&subscribe_msg);
-        
+
         RealtimeSubscription { topic, data, ws }
     }
-    
+
     pub fn data(&self) -> Option<T> {
         self.data.borrow().clone()
     }
-    
+
     pub fn update(&self, new_data: T) {
         *self.data.borrow_mut() = Some(new_data);
         // Trigger re-render
@@ -311,7 +309,7 @@ impl<T> Drop for RealtimeSubscription<T> {
             "type": "unsubscribe",
             "topic": &self.topic,
         });
-        
+
         let _ = self.ws.send_json(&unsubscribe_msg);
     }
 }

@@ -2,10 +2,9 @@
 
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
-use wasm_bindgen::prelude::*;
 
 /// Form state
 #[derive(Clone)]
@@ -33,7 +32,7 @@ pub fn use_form<T: Clone + Default + 'static>(config: FormConfig<T>) -> Form<T> 
         submitting: false,
         submitted: false,
     }));
-    
+
     Form {
         state: state.clone(),
         config: Rc::new(config),
@@ -50,54 +49,58 @@ impl<T: Clone + 'static> Form<T> {
     pub fn values(&self) -> T {
         self.state.borrow().values.clone()
     }
-    
+
     pub fn errors(&self) -> HashMap<String, Vec<String>> {
         self.state.borrow().errors.clone()
     }
-    
+
     pub fn is_valid(&self) -> bool {
         self.state.borrow().errors.is_empty()
     }
-    
+
     pub fn is_submitting(&self) -> bool {
         self.state.borrow().submitting
     }
-    
-    pub fn set_field_value(&self, field: &str, value: impl Into<String>) {
+
+    pub fn set_field_value(&self, _field: &str, _value: impl Into<String>) {
         // This is simplified - in real implementation you'd use reflection or macros
         // to set the actual field on T
     }
-    
+
     pub fn set_field_touched(&self, field: &str, touched: bool) {
-        self.state.borrow_mut().touched.insert(field.to_string(), touched);
+        self.state
+            .borrow_mut()
+            .touched
+            .insert(field.to_string(), touched);
     }
-    
+
     pub fn validate(&self) {
         if let Some(validate_fn) = &self.config.validate {
             let errors = validate_fn(&self.state.borrow().values);
             self.state.borrow_mut().errors = errors;
         }
     }
-    
+
     pub fn handle_submit(&self) -> impl Fn() {
         let state = self.state.clone();
         let config = self.config.clone();
-        
+
         move || {
             let mut state_mut = state.borrow_mut();
             state_mut.submitting = true;
             state_mut.submitted = true;
-            
+
             // Validate all fields
             if let Some(validate_fn) = &config.validate {
                 state_mut.errors = validate_fn(&state_mut.values);
             }
-            
+
             if state_mut.errors.is_empty() {
                 // Submit form
                 let values = state_mut.values.clone();
                 let state_clone = state.clone();
-                
+                let config = config.clone();
+
                 spawn_local(async move {
                     match (config.on_submit)(&values).await {
                         Ok(_) => {
@@ -105,10 +108,10 @@ impl<T: Clone + 'static> Form<T> {
                         }
                         Err(error) => {
                             state_clone.borrow_mut().submitting = false;
-                            state_clone.borrow_mut().errors.insert(
-                                "_form".to_string(),
-                                vec![error],
-                            );
+                            state_clone
+                                .borrow_mut()
+                                .errors
+                                .insert("_form".to_string(), vec![error]);
                         }
                     }
                 });
@@ -117,7 +120,7 @@ impl<T: Clone + 'static> Form<T> {
             }
         }
     }
-    
+
     pub fn reset(&self) {
         *self.state.borrow_mut() = FormState {
             values: self.config.initial_values.clone(),
@@ -131,7 +134,6 @@ impl<T: Clone + 'static> Form<T> {
 
 /// Validation rules
 pub mod validators {
-    use super::*;
     
     pub fn required(value: &str) -> Option<String> {
         if value.trim().is_empty() {
@@ -140,7 +142,7 @@ pub mod validators {
             None
         }
     }
-    
+
     pub fn email(value: &str) -> Option<String> {
         let email_regex = regex::Regex::new(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").unwrap();
         if !email_regex.is_match(value) {
@@ -149,7 +151,7 @@ pub mod validators {
             None
         }
     }
-    
+
     pub fn min_length(min: usize) -> impl Fn(&str) -> Option<String> {
         move |value: &str| {
             if value.len() < min {
@@ -159,7 +161,7 @@ pub mod validators {
             }
         }
     }
-    
+
     pub fn max_length(max: usize) -> impl Fn(&str) -> Option<String> {
         move |value: &str| {
             if value.len() > max {
@@ -169,7 +171,7 @@ pub mod validators {
             }
         }
     }
-    
+
     pub fn pattern(regex: &'static str, message: &'static str) -> impl Fn(&str) -> Option<String> {
         move |value: &str| {
             let re = regex::Regex::new(regex).unwrap();
@@ -180,10 +182,13 @@ pub mod validators {
             }
         }
     }
-    
-    pub fn compose(validators: Vec<Box<dyn Fn(&str) -> Option<String>>>) -> impl Fn(&str) -> Vec<String> {
+
+    pub fn compose(
+        validators: Vec<Box<dyn Fn(&str) -> Option<String>>>,
+    ) -> impl Fn(&str) -> Vec<String> {
         move |value: &str| {
-            validators.iter()
+            validators
+                .iter()
                 .filter_map(|validator| validator(value))
                 .collect()
         }
@@ -207,13 +212,13 @@ impl TextField {
             form: Rc::new(RefCell::new(EmptyFormField)),
         }
     }
-    
+
     pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = Some(placeholder.into());
         self
     }
-    
-    pub fn bind<T>(mut self, form: &Form<T>) -> Self {
+
+    pub fn bind<T>(self, _form: &Form<T>) -> Self {
         // Bind to form
         self
     }
@@ -221,20 +226,47 @@ impl TextField {
 
 impl Component for TextField {
     fn render(&self) -> Element {
-        view! {
-            <div class="form-field">
-                <label for={&self.name}>{&self.label}</label>
-                <input
-                    type="text"
-                    id={&self.name}
-                    name={&self.name}
-                    placeholder={self.placeholder.as_deref().unwrap_or("")}
-                    class="form-input"
-                />
-                <div class="form-error">
-                    // Show errors here
-                </div>
-            </div>
+        Element::Node {
+            tag: "div".to_string(),
+            props: Props {
+                class: Some("form-field".to_string()),
+                ..Default::default()
+            },
+            children: vec![
+                Element::Node {
+                    tag: "label".to_string(),
+                    props: Props {
+                        attributes: vec![("for".to_string(), self.name.clone())],
+                        ..Default::default()
+                    },
+                    children: vec![Element::Text(self.label.clone())],
+                },
+                Element::Node {
+                    tag: "input".to_string(),
+                    props: Props {
+                        class: Some("form-input".to_string()),
+                        attributes: vec![
+                            ("type".to_string(), "text".to_string()),
+                            ("id".to_string(), self.name.clone()),
+                            ("name".to_string(), self.name.clone()),
+                            (
+                                "placeholder".to_string(),
+                                self.placeholder.as_deref().unwrap_or("").to_string(),
+                            ),
+                        ],
+                        ..Default::default()
+                    },
+                    children: vec![],
+                },
+                Element::Node {
+                    tag: "div".to_string(),
+                    props: Props {
+                        class: Some("form-error".to_string()),
+                        ..Default::default()
+                    },
+                    children: vec![],
+                },
+            ],
         }
     }
 }
@@ -248,9 +280,13 @@ trait FormField {
 
 struct EmptyFormField;
 impl FormField for EmptyFormField {
-    fn get_value(&self) -> String { String::new() }
+    fn get_value(&self) -> String {
+        String::new()
+    }
     fn set_value(&mut self, _value: String) {}
-    fn get_errors(&self) -> Vec<String> { vec![] }
+    fn get_errors(&self) -> Vec<String> {
+        vec![]
+    }
 }
 
 /// Server actions
@@ -269,13 +305,16 @@ impl<T: Serialize, R: for<'de> Deserialize<'de>> ServerAction<T, R> {
             _phantom: std::marker::PhantomData,
         }
     }
-    
+
     pub async fn execute(&self) -> Result<R, String> {
-        let response = post("/api/actions", &self).await
+        let response = post("/api/actions", &self)
+            .await
             .map_err(|e| format!("Network error: {:?}", e))?;
-        
+
         if response.ok() {
-            response.json().await
+            response
+                .json()
+                .await
                 .map_err(|e| format!("Parse error: {:?}", e))
         } else {
             Err(format!("Server error: {}", response.status()))
@@ -296,7 +335,7 @@ impl<T: Clone + 'static> FormComponent<T> {
             children: vec![],
         }
     }
-    
+
     pub fn children(mut self, children: Vec<Element>) -> Self {
         self.children = children;
         self
@@ -306,13 +345,11 @@ impl<T: Clone + 'static> FormComponent<T> {
 impl<T: Clone + 'static> Component for FormComponent<T> {
     fn render(&self) -> Element {
         let on_submit = self.form.handle_submit();
-        
+
         Element::Node {
             tag: "form".to_string(),
             props: Props {
-                attributes: vec![
-                    ("onsubmit".to_string(), "event.preventDefault()".to_string()),
-                ],
+                attributes: vec![("onsubmit".to_string(), "event.preventDefault()".to_string())],
                 on_click: Some(Rc::new(move || on_submit())),
                 ..Default::default()
             },
@@ -322,7 +359,7 @@ impl<T: Clone + 'static> Component for FormComponent<T> {
 }
 
 // Re-exports
-use std::pin::Pin;
-use std::future::Future;
-use wasm_bindgen_futures::spawn_local;
 use crate::fetch::post;
+use std::future::Future;
+use std::pin::Pin;
+use wasm_bindgen_futures::spawn_local;

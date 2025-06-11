@@ -15,7 +15,7 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["fs", "cors"] }
 tower-livereload = "0.9"
 notify = "6"
-layer9-framework = { path = ".." }
+layer9-framework = { path = "../.." }
 
 # Build tools
 wasm-pack = "0.12"

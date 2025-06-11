@@ -1,10 +1,9 @@
 //! API Documentation System - L5/L6
 //! OpenAPI/Swagger and GraphQL schema documentation
 
-use crate::prelude::*;
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 
 /// OpenAPI 3.0 specification
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -225,12 +224,12 @@ impl OpenApiBuilder {
             },
         }
     }
-    
+
     pub fn description(mut self, description: impl Into<String>) -> Self {
         self.spec.info.description = Some(description.into());
         self
     }
-    
+
     pub fn server(mut self, url: impl Into<String>, description: Option<String>) -> Self {
         self.spec.servers.push(ApiServer {
             url: url.into(),
@@ -239,7 +238,7 @@ impl OpenApiBuilder {
         });
         self
     }
-    
+
     pub fn tag(mut self, name: impl Into<String>, description: Option<String>) -> Self {
         let tags = self.spec.tags.get_or_insert_with(Vec::new);
         tags.push(Tag {
@@ -248,12 +247,12 @@ impl OpenApiBuilder {
         });
         self
     }
-    
+
     pub fn path(mut self, path: impl Into<String>, item: PathItem) -> Self {
         self.spec.paths.insert(path.into(), item);
         self
     }
-    
+
     pub fn security_scheme(mut self, name: impl Into<String>, scheme: SecurityScheme) -> Self {
         let components = self.spec.components.get_or_insert_with(|| Components {
             schemas: None,
@@ -261,12 +260,12 @@ impl OpenApiBuilder {
             parameters: None,
             security_schemes: None,
         });
-        
+
         let schemes = components.security_schemes.get_or_insert_with(HashMap::new);
         schemes.insert(name.into(), scheme);
         self
     }
-    
+
     pub fn build(self) -> OpenApiSpec {
         self.spec
     }
@@ -292,24 +291,30 @@ impl ApiDoc {
             },
         }
     }
-    
+
     pub fn summary(mut self, summary: impl Into<String>) -> Self {
         self.operation.summary = Some(summary.into());
         self
     }
-    
+
     pub fn description(mut self, description: impl Into<String>) -> Self {
         self.operation.description = Some(description.into());
         self
     }
-    
+
     pub fn tag(mut self, tag: impl Into<String>) -> Self {
         let tags = self.operation.tags.get_or_insert_with(Vec::new);
         tags.push(tag.into());
         self
     }
-    
-    pub fn param(mut self, name: impl Into<String>, location: &str, schema: Schema, required: bool) -> Self {
+
+    pub fn param(
+        mut self,
+        name: impl Into<String>,
+        location: &str,
+        schema: Schema,
+        required: bool,
+    ) -> Self {
         let params = self.operation.parameters.get_or_insert_with(Vec::new);
         params.push(Parameter {
             name: name.into(),
@@ -320,43 +325,57 @@ impl ApiDoc {
         });
         self
     }
-    
+
     pub fn body(mut self, content_type: &str, schema: Schema, required: bool) -> Self {
         self.operation.request_body = Some(RequestBody {
             description: schema.description.clone(),
             content: {
                 let mut content = HashMap::new();
-                content.insert(content_type.to_string(), MediaType {
-                    schema,
-                    example: None,
-                    examples: None,
-                });
+                content.insert(
+                    content_type.to_string(),
+                    MediaType {
+                        schema,
+                        example: None,
+                        examples: None,
+                    },
+                );
                 content
             },
             required: Some(required),
         });
         self
     }
-    
-    pub fn response(mut self, status: &str, description: impl Into<String>, schema: Option<Schema>) -> Self {
+
+    pub fn response(
+        mut self,
+        status: &str,
+        description: impl Into<String>,
+        schema: Option<Schema>,
+    ) -> Self {
         let content = schema.map(|s| {
             let mut content = HashMap::new();
-            content.insert("application/json".to_string(), MediaType {
-                schema: s,
-                example: None,
-                examples: None,
-            });
+            content.insert(
+                "application/json".to_string(),
+                MediaType {
+                    schema: s,
+                    example: None,
+                    examples: None,
+                },
+            );
             content
         });
-        
-        self.operation.responses.insert(status.to_string(), Response {
-            description: description.into(),
-            content,
-            headers: None,
-        });
+
+        self.operation.responses.insert(
+            status.to_string(),
+            Response {
+                description: description.into(),
+                content,
+                headers: None,
+            },
+        );
         self
     }
-    
+
     pub fn build(self) -> Operation {
         self.operation
     }
@@ -381,7 +400,7 @@ impl SchemaBuilder {
             reference: None,
         }
     }
-    
+
     pub fn integer() -> Schema {
         Schema {
             schema_type: Some("integer".to_string()),
@@ -389,7 +408,7 @@ impl SchemaBuilder {
             ..Self::string()
         }
     }
-    
+
     pub fn number() -> Schema {
         Schema {
             schema_type: Some("number".to_string()),
@@ -397,14 +416,14 @@ impl SchemaBuilder {
             ..Self::string()
         }
     }
-    
+
     pub fn boolean() -> Schema {
         Schema {
             schema_type: Some("boolean".to_string()),
             ..Self::string()
         }
     }
-    
+
     pub fn array(items: Schema) -> Schema {
         Schema {
             schema_type: Some("array".to_string()),
@@ -412,7 +431,7 @@ impl SchemaBuilder {
             ..Self::string()
         }
     }
-    
+
     pub fn object(properties: HashMap<String, Schema>, required: Vec<String>) -> Schema {
         Schema {
             schema_type: Some("object".to_string()),
@@ -421,7 +440,7 @@ impl SchemaBuilder {
             ..Self::string()
         }
     }
-    
+
     pub fn reference(path: impl Into<String>) -> Schema {
         Schema {
             reference: Some(path.into()),
@@ -494,48 +513,142 @@ impl ApiDocsViewer {
 impl Component for ApiDocsViewer {
     fn render(&self) -> Element {
         // Render Swagger UI or ReDoc style documentation
-        view! {
-            <div class="api-docs">
-                <h1>{&self.spec.info.title}</h1>
-                <p>{"Version: "}{&self.spec.info.version}</p>
-                {if let Some(desc) = &self.spec.info.description {
-                    view! { <p>{desc}</p> }
-                } else {
-                    view! { <div /> }
-                }}
-                
-                <h2>{"Endpoints"}</h2>
-                {self.spec.paths.iter().map(|(path, item)| {
-                    view! {
-                        <div class="endpoint">
-                            <h3>{path}</h3>
-                            {render_path_item(item)}
-                        </div>
-                    }
-                }).collect::<Vec<_>>()}
-            </div>
+        let description_element = if let Some(desc) = &self.spec.info.description {
+            Element::Node {
+                tag: "p".to_string(),
+                props: Props::default(),
+                children: vec![Element::Text(desc.clone())],
+            }
+        } else {
+            Element::Node {
+                tag: "div".to_string(),
+                props: Props::default(),
+                children: vec![],
+            }
+        };
+
+        let endpoints = self
+            .spec
+            .paths
+            .iter()
+            .map(|(path, item)| Element::Node {
+                tag: "div".to_string(),
+                props: Props {
+                    class: Some("endpoint".to_string()),
+                    ..Default::default()
+                },
+                children: vec![
+                    Element::Node {
+                        tag: "h3".to_string(),
+                        props: Props::default(),
+                        children: vec![Element::Text(path.clone())],
+                    },
+                    render_path_item(item),
+                ],
+            })
+            .collect();
+
+        Element::Node {
+            tag: "div".to_string(),
+            props: Props {
+                class: Some("api-docs".to_string()),
+                ..Default::default()
+            },
+            children: vec![
+                Element::Node {
+                    tag: "h1".to_string(),
+                    props: Props::default(),
+                    children: vec![Element::Text(self.spec.info.title.clone())],
+                },
+                Element::Node {
+                    tag: "p".to_string(),
+                    props: Props::default(),
+                    children: vec![Element::Text(format!(
+                        "Version: {}",
+                        self.spec.info.version
+                    ))],
+                },
+                description_element,
+                Element::Node {
+                    tag: "h2".to_string(),
+                    props: Props::default(),
+                    children: vec![Element::Text("Endpoints".to_string())],
+                },
+                Element::Node {
+                    tag: "div".to_string(),
+                    props: Props::default(),
+                    children: endpoints,
+                },
+            ],
         }
     }
 }
 
 fn render_path_item(item: &PathItem) -> Element {
-    view! {
-        <div class="path-methods">
-            {item.get.as_ref().map(|op| render_operation("GET", op)).unwrap_or_else(|| view! { <div /> })}
-            {item.post.as_ref().map(|op| render_operation("POST", op)).unwrap_or_else(|| view! { <div /> })}
-            {item.put.as_ref().map(|op| render_operation("PUT", op)).unwrap_or_else(|| view! { <div /> })}
-            {item.delete.as_ref().map(|op| render_operation("DELETE", op)).unwrap_or_else(|| view! { <div /> })}
-        </div>
+    let mut methods = vec![];
+
+    if let Some(op) = &item.get {
+        methods.push(render_operation("GET", op));
+    }
+    if let Some(op) = &item.post {
+        methods.push(render_operation("POST", op));
+    }
+    if let Some(op) = &item.put {
+        methods.push(render_operation("PUT", op));
+    }
+    if let Some(op) = &item.delete {
+        methods.push(render_operation("DELETE", op));
+    }
+
+    Element::Node {
+        tag: "div".to_string(),
+        props: Props {
+            class: Some("path-methods".to_string()),
+            ..Default::default()
+        },
+        children: methods,
     }
 }
 
 fn render_operation(method: &str, op: &Operation) -> Element {
-    view! {
-        <div class="operation">
-            <span class="method">{method}</span>
-            {op.summary.as_ref().map(|s| view! { <span class="summary">{s}</span> }).unwrap_or_else(|| view! { <span /> })}
-            {op.description.as_ref().map(|d| view! { <p class="description">{d}</p> }).unwrap_or_else(|| view! { <div /> })}
-        </div>
+    let mut children = vec![Element::Node {
+        tag: "span".to_string(),
+        props: Props {
+            class: Some("method".to_string()),
+            ..Default::default()
+        },
+        children: vec![Element::Text(method.to_string())],
+    }];
+
+    if let Some(summary) = &op.summary {
+        children.push(Element::Node {
+            tag: "span".to_string(),
+            props: Props {
+                class: Some("summary".to_string()),
+                ..Default::default()
+            },
+            children: vec![Element::Text(summary.clone())],
+        });
+    }
+
+    if let Some(description) = &op.description {
+        children.push(Element::Node {
+            tag: "p".to_string(),
+            props: Props {
+                class: Some("description".to_string()),
+                ..Default::default()
+            },
+            children: vec![Element::Text(description.clone())],
+        });
+    }
+
+    Element::Node {
+        tag: "div".to_string(),
+        props: Props {
+            class: Some("operation".to_string()),
+            ..Default::default()
+        },
+        children,
     }
 }
 
@@ -550,5 +663,4 @@ pub fn export_openapi_yaml(spec: &OpenApiSpec) -> String {
 }
 
 // Re-exports
-use crate::component::{Component, Element};
-use crate::view;
+use crate::component::{Component, Element, Props};

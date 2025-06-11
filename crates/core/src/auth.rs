@@ -1,9 +1,11 @@
 //! Authentication System - L3/L4
 
+use crate::component::{Element, Props};
+use crate::layers::*;
+use crate::prelude::Component;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use web_sys::{window, Storage};
-use serde::{Deserialize, Serialize};
-use crate::layers::*;
 
 /// Authentication state
 #[derive(Clone, Serialize, Deserialize)]
@@ -34,10 +36,14 @@ pub struct AuthService {
     storage: Storage,
 }
 
+impl LayerBound for AuthService {
+    const LAYER: Layer = Layer::L4Services;
+}
+
 impl L4::Service for AuthService {
     type Request = AuthRequest;
     type Response = AuthResponse;
-    
+
     async fn handle(&self, req: Self::Request) -> Self::Response {
         match req {
             AuthRequest::Login(provider) => self.login(provider).await,
@@ -67,10 +73,10 @@ impl AuthService {
             .ok_or("No window")?
             .local_storage()?
             .ok_or("No local storage")?;
-        
+
         Ok(AuthService { storage })
     }
-    
+
     async fn login(&self, provider: AuthProvider) -> AuthResponse {
         // OAuth flow
         let redirect_url = match provider {
@@ -94,83 +100,87 @@ impl AuthService {
                 return AuthResponse::Error("Email auth not implemented".to_string());
             }
         };
-        
+
         AuthResponse::Redirect(redirect_url)
     }
-    
+
     async fn logout(&self) -> AuthResponse {
         // Clear storage
         let _ = self.storage.remove_item("layer9_auth_token");
         let _ = self.storage.remove_item("layer9_auth_user");
-        
+
         AuthResponse::Success(AuthState {
             user: None,
             token: None,
             expires_at: None,
         })
     }
-    
+
     async fn refresh_token(&self) -> AuthResponse {
         // Check if token is expired
-        if let Ok(Some(token)) = self.storage.get_item("layer9_auth_token") {
+        if let Ok(Some(_token)) = self.storage.get_item("layer9_auth_token") {
             // TODO: Verify JWT and refresh if needed
             AuthResponse::Success(self.get_state())
         } else {
             AuthResponse::Error("No token to refresh".to_string())
         }
     }
-    
+
     fn get_current_user(&self) -> AuthResponse {
         AuthResponse::Success(self.get_state())
     }
-    
+
     fn get_state(&self) -> AuthState {
-        let user = self.storage
+        let user = self
+            .storage
             .get_item("layer9_auth_user")
             .ok()
             .flatten()
             .and_then(|s| serde_json::from_str(&s).ok());
-        
-        let token = self.storage
-            .get_item("layer9_auth_token")
-            .ok()
-            .flatten();
-        
-        let expires_at = self.storage
+
+        let token = self.storage.get_item("layer9_auth_token").ok().flatten();
+
+        let expires_at = self
+            .storage
             .get_item("layer9_auth_expires")
             .ok()
             .flatten()
             .and_then(|s| s.parse().ok());
-        
-        AuthState { user, token, expires_at }
+
+        AuthState {
+            user,
+            token,
+            expires_at,
+        }
     }
-    
+
     fn get_env(&self, key: &str) -> String {
         // In real implementation, these would be injected at build time
         match key {
             "GITHUB_CLIENT_ID" => "your_github_client_id",
-            "GOOGLE_CLIENT_ID" => "your_google_client_id", 
+            "GOOGLE_CLIENT_ID" => "your_google_client_id",
             "REDIRECT_URI" => "http://localhost:8080/auth/callback",
             _ => "missing_env_var",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
 /// OAuth callback handler
 #[wasm_bindgen]
-pub async fn handle_oauth_callback(code: String, provider: String) -> Result<JsValue, JsValue> {
-    let auth_service = AuthService::new()?;
-    
+pub async fn handle_oauth_callback(_code: String, provider: String) -> Result<JsValue, JsValue> {
+    let _auth_service = AuthService::new()?;
+
     // Exchange code for token
-    let token_url = match provider.as_str() {
+    let _token_url = match provider.as_str() {
         "github" => "https://github.com/login/oauth/access_token",
         "google" => "https://oauth2.googleapis.com/token",
         _ => return Err("Unknown provider".into()),
     };
-    
+
     // TODO: Implement token exchange
     // This would typically be done server-side for security
-    
+
     Ok(JsValue::from_str("Success"))
 }
 
@@ -193,7 +203,7 @@ impl<T: Component> Protected<T> {
             fallback: None,
         }
     }
-    
+
     pub fn fallback(mut self, fallback: impl Component + 'static) -> Self {
         self.fallback = Some(Box::new(fallback));
         self
@@ -203,18 +213,40 @@ impl<T: Component> Protected<T> {
 impl<T: Component> Component for Protected<T> {
     fn render(&self) -> Element {
         let auth = use_auth();
-        
+
         if auth.user.is_some() {
             self.component.render()
         } else if let Some(fallback) = &self.fallback {
             fallback.render()
         } else {
-            view! {
-                <div class="auth-required">
-                    <h2>"Authentication Required"</h2>
-                    <p>"Please log in to view this content"</p>
-                    <button id="login-github">"Login with GitHub"</button>
-                </div>
+            Element::Node {
+                tag: "div".to_string(),
+                props: Props {
+                    class: Some("auth-required".to_string()),
+                    ..Default::default()
+                },
+                children: vec![
+                    Element::Node {
+                        tag: "h2".to_string(),
+                        props: Props::default(),
+                        children: vec![Element::Text("Authentication Required".to_string())],
+                    },
+                    Element::Node {
+                        tag: "p".to_string(),
+                        props: Props::default(),
+                        children: vec![Element::Text(
+                            "Please log in to view this content".to_string(),
+                        )],
+                    },
+                    Element::Node {
+                        tag: "button".to_string(),
+                        props: Props {
+                            id: Some("login-github".to_string()),
+                            ..Default::default()
+                        },
+                        children: vec![Element::Text("Login with GitHub".to_string())],
+                    },
+                ],
             }
         }
     }

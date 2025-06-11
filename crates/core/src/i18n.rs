@@ -1,16 +1,13 @@
 //! Internationalization (i18n) Support - L5/L6
 //! Multi-language support with dynamic locale switching
-
-use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use once_cell::sync::Lazy;
 
 /// Supported locales
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Locale {
     EnUS,
     EnGB,
@@ -43,7 +40,7 @@ impl Locale {
             Locale::RuRU => "ru-RU",
         }
     }
-    
+
     pub fn from_code(code: &str) -> Option<Self> {
         match code {
             "en-US" | "en" => Some(Locale::EnUS),
@@ -61,7 +58,7 @@ impl Locale {
             _ => None,
         }
     }
-    
+
     pub fn display_name(&self) -> &'static str {
         match self {
             Locale::EnUS => "English (US)",
@@ -78,7 +75,7 @@ impl Locale {
             Locale::RuRU => "Русский",
         }
     }
-    
+
     pub fn rtl(&self) -> bool {
         // Add RTL languages here if needed (Arabic, Hebrew, etc.)
         false
@@ -113,19 +110,20 @@ impl TranslationCatalog {
             locales: HashMap::new(),
         }
     }
-    
+
     pub fn add_locale(mut self, locale: Locale, messages: Messages) -> Self {
         self.locales.insert(locale, messages);
         self
     }
-    
+
     pub fn get(&self, locale: Locale, key: &str) -> Option<&TranslationValue> {
         self.locales.get(&locale)?.get(key)
     }
-    
+
     pub fn merge(&mut self, other: TranslationCatalog) {
         for (locale, messages) in other.locales {
-            self.locales.entry(locale)
+            self.locales
+                .entry(locale)
                 .or_insert_with(HashMap::new)
                 .extend(messages);
         }
@@ -143,28 +141,29 @@ impl I18nContext {
     pub fn new(catalog: TranslationCatalog) -> Self {
         // Detect browser locale
         let browser_locale = detect_browser_locale().unwrap_or(Locale::EnUS);
-        
+
         I18nContext {
             current_locale: Rc::new(RefCell::new(browser_locale)),
             catalog: Rc::new(catalog),
             fallback_locale: Locale::EnUS,
         }
     }
-    
+
     pub fn locale(&self) -> Locale {
         *self.current_locale.borrow()
     }
-    
+
     pub fn set_locale(&self, locale: Locale) {
         *self.current_locale.borrow_mut() = locale;
-        
+
         // Persist to localStorage
         if let Some(storage) = web_sys::window()
             .and_then(|w| w.local_storage().ok())
-            .flatten() {
+            .flatten()
+        {
             let _ = storage.set_item("layer9-locale", locale.code());
         }
-        
+
         // Update document lang attribute
         if let Some(document) = web_sys::window().and_then(|w| w.document()) {
             if let Some(html) = document.document_element() {
@@ -172,34 +171,40 @@ impl I18nContext {
             }
         }
     }
-    
+
     pub fn t(&self, key: &str) -> String {
         self.translate(key, None)
     }
-    
+
     pub fn translate(&self, key: &str, args: Option<&HashMap<String, String>>) -> String {
         let locale = self.locale();
-        
+
         // Try current locale
         if let Some(value) = self.catalog.get(locale, key) {
             return self.format_translation(value, args);
         }
-        
+
         // Try fallback locale
         if let Some(value) = self.catalog.get(self.fallback_locale, key) {
             return self.format_translation(value, args);
         }
-        
+
         // Return key if not found
         key.to_string()
     }
-    
+
     pub fn plural(&self, key: &str, count: i32, args: Option<&HashMap<String, String>>) -> String {
         let locale = self.locale();
-        
+
         if let Some(value) = self.catalog.get(locale, key) {
             match value {
-                TranslationValue::Plural { zero, one, few, many, other } => {
+                TranslationValue::Plural {
+                    zero,
+                    one,
+                    few,
+                    many,
+                    other,
+                } => {
                     let text = match count {
                         0 if zero.is_some() => zero.as_ref().unwrap(),
                         1 => one,
@@ -207,16 +212,16 @@ impl I18nContext {
                         _ if count > 20 && many.is_some() => many.as_ref().unwrap(),
                         _ => other,
                     };
-                    
+
                     let mut final_args = args.cloned().unwrap_or_default();
                     final_args.insert("count".to_string(), count.to_string());
-                    
+
                     self.interpolate(text, &final_args)
                 }
                 TranslationValue::Text(text) => {
                     let mut final_args = args.cloned().unwrap_or_default();
                     final_args.insert("count".to_string(), count.to_string());
-                    
+
                     self.interpolate(text, &final_args)
                 }
             }
@@ -224,8 +229,12 @@ impl I18nContext {
             format!("{} ({})", key, count)
         }
     }
-    
-    fn format_translation(&self, value: &TranslationValue, args: Option<&HashMap<String, String>>) -> String {
+
+    fn format_translation(
+        &self,
+        value: &TranslationValue,
+        args: Option<&HashMap<String, String>>,
+    ) -> String {
         match value {
             TranslationValue::Text(text) => {
                 if let Some(args) = args {
@@ -237,56 +246,59 @@ impl I18nContext {
             TranslationValue::Plural { other, .. } => other.clone(),
         }
     }
-    
+
     fn interpolate(&self, text: &str, args: &HashMap<String, String>) -> String {
         let mut result = text.to_string();
-        
+
         for (key, value) in args {
             result = result.replace(&format!("{{{}}}", key), value);
             result = result.replace(&format!("{{{{ {} }}}}", key), value);
         }
-        
+
         result
     }
 }
 
-/// Global i18n instance
-static I18N: Lazy<Rc<RefCell<Option<I18nContext>>>> = Lazy::new(|| {
-    Rc::new(RefCell::new(None))
-});
+thread_local! {
+    static I18N: RefCell<Option<I18nContext>> = RefCell::new(None);
+}
 
 /// Initialize i18n
 pub fn init_i18n(catalog: TranslationCatalog) {
     let ctx = I18nContext::new(catalog);
-    *I18N.borrow_mut() = Some(ctx);
+    I18N.with(|i18n| {
+        *i18n.borrow_mut() = Some(ctx);
+    });
 }
 
 /// i18n hook
 pub fn use_i18n() -> I18n {
-    let ctx = I18N.borrow();
-    if let Some(ctx) = ctx.as_ref() {
-        I18n {
-            locale: ctx.locale(),
-            set_locale: {
-                let ctx = ctx.clone();
-                Box::new(move |locale| ctx.set_locale(locale))
-            },
-            t: {
-                let ctx = ctx.clone();
-                Box::new(move |key| ctx.t(key))
-            },
-            translate: {
-                let ctx = ctx.clone();
-                Box::new(move |key, args| ctx.translate(key, args))
-            },
-            plural: {
-                let ctx = ctx.clone();
-                Box::new(move |key, count, args| ctx.plural(key, count, args))
-            },
+    I18N.with(|i18n| {
+        let ctx = i18n.borrow();
+        if let Some(ctx) = ctx.as_ref() {
+            I18n {
+                locale: ctx.locale(),
+                set_locale: {
+                    let ctx = ctx.clone();
+                    Box::new(move |locale| ctx.set_locale(locale))
+                },
+                t: {
+                    let ctx = ctx.clone();
+                    Box::new(move |key| ctx.t(key))
+                },
+                translate: {
+                    let ctx = ctx.clone();
+                    Box::new(move |key, args| ctx.translate(key, args))
+                },
+                plural: {
+                    let ctx = ctx.clone();
+                    Box::new(move |key, count, args| ctx.plural(key, count, args))
+                },
+            }
+        } else {
+            panic!("i18n not initialized. Call init_i18n() first.");
         }
-    } else {
-        panic!("i18n not initialized. Call init_i18n() first.");
-    }
+    })
 }
 
 /// i18n hook result
@@ -303,14 +315,15 @@ fn detect_browser_locale() -> Option<Locale> {
     // Check localStorage first
     if let Some(storage) = web_sys::window()
         .and_then(|w| w.local_storage().ok())
-        .flatten() {
+        .flatten()
+    {
         if let Ok(Some(stored)) = storage.get_item("layer9-locale") {
             if let Some(locale) = Locale::from_code(&stored) {
                 return Some(locale);
             }
         }
     }
-    
+
     // Check navigator language
     if let Some(window) = web_sys::window() {
         if let Some(navigator) = window.navigator().language() {
@@ -319,7 +332,7 @@ fn detect_browser_locale() -> Option<Locale> {
             }
         }
     }
-    
+
     None
 }
 
@@ -332,12 +345,12 @@ impl NumberFormat {
     pub fn new(locale: Locale) -> Self {
         NumberFormat { locale }
     }
-    
+
     pub fn format(&self, number: f64) -> String {
         // Use Intl.NumberFormat
         format!("{:.2}", number) // Simplified for now
     }
-    
+
     pub fn currency(&self, amount: f64, currency: &str) -> String {
         match currency {
             "USD" => format!("${:.2}", amount),
@@ -349,7 +362,7 @@ impl NumberFormat {
             _ => format!("{} {:.2}", currency, amount),
         }
     }
-    
+
     pub fn percent(&self, value: f64) -> String {
         format!("{:.1}%", value * 100.0)
     }
@@ -364,27 +377,27 @@ impl DateTimeFormat {
     pub fn new(locale: Locale) -> Self {
         DateTimeFormat { locale }
     }
-    
+
     pub fn date(&self, timestamp: f64) -> String {
         // Use Intl.DateTimeFormat
         let date = js_sys::Date::new(&JsValue::from_f64(timestamp));
-        date.to_locale_date_string(&self.locale.code().into())
+        date.to_locale_date_string(self.locale.code(), &JsValue::NULL).into()
     }
-    
+
     pub fn time(&self, timestamp: f64) -> String {
         let date = js_sys::Date::new(&JsValue::from_f64(timestamp));
-        date.to_locale_time_string(&self.locale.code().into())
+        date.to_locale_time_string(self.locale.code()).into()
     }
-    
+
     pub fn date_time(&self, timestamp: f64) -> String {
         let date = js_sys::Date::new(&JsValue::from_f64(timestamp));
-        date.to_locale_string(&self.locale.code().into())
+        date.to_locale_string(self.locale.code(), &JsValue::NULL).into()
     }
-    
+
     pub fn relative(&self, timestamp: f64) -> String {
         let now = js_sys::Date::now();
         let diff = (now - timestamp) / 1000.0; // seconds
-        
+
         match diff {
             d if d < 60.0 => "just now".to_string(),
             d if d < 3600.0 => format!("{} minutes ago", (d / 60.0) as i32),
@@ -441,37 +454,49 @@ pub struct TranslationsBuilder;
 impl TranslationsBuilder {
     pub fn en_us() -> Messages {
         let mut messages = HashMap::new();
-        
-        messages.insert("app.title".to_string(), 
-            TranslationValue::Text("My Application".to_string()));
-        
-        messages.insert("welcome.message".to_string(), 
-            TranslationValue::Text("Welcome, {name}!".to_string()));
-        
-        messages.insert("items.count".to_string(), 
+
+        messages.insert(
+            "app.title".to_string(),
+            TranslationValue::Text("My Application".to_string()),
+        );
+
+        messages.insert(
+            "welcome.message".to_string(),
+            TranslationValue::Text("Welcome, {name}!".to_string()),
+        );
+
+        messages.insert(
+            "items.count".to_string(),
             TranslationValue::Plural {
                 zero: Some("No items".to_string()),
                 one: "1 item".to_string(),
                 few: None,
                 many: None,
                 other: "{count} items".to_string(),
-            });
-        
+            },
+        );
+
         messages
     }
-    
+
     pub fn ko_kr() -> Messages {
         let mut messages = HashMap::new();
-        
-        messages.insert("app.title".to_string(), 
-            TranslationValue::Text("내 애플리케이션".to_string()));
-        
-        messages.insert("welcome.message".to_string(), 
-            TranslationValue::Text("{name}님, 환영합니다!".to_string()));
-        
-        messages.insert("items.count".to_string(), 
-            TranslationValue::Text("항목 {count}개".to_string()));
-        
+
+        messages.insert(
+            "app.title".to_string(),
+            TranslationValue::Text("내 애플리케이션".to_string()),
+        );
+
+        messages.insert(
+            "welcome.message".to_string(),
+            TranslationValue::Text("{name}님, 환영합니다!".to_string()),
+        );
+
+        messages.insert(
+            "items.count".to_string(),
+            TranslationValue::Text("항목 {count}개".to_string()),
+        );
+
         messages
     }
 }

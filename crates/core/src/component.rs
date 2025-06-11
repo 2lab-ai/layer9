@@ -1,9 +1,8 @@
 //! Component System - L5
 
-use wasm_bindgen::prelude::*;
-use web_sys::{Element as DomElement, Node};
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
+use web_sys::{Element as DomElement, Node};
 
 /// Virtual DOM Element
 #[derive(Clone)]
@@ -44,7 +43,7 @@ impl Component for EmptyComponent {
 /// Base component trait
 pub trait Component: 'static {
     fn render(&self) -> Element;
-    
+
     fn mount(&self, parent: &DomElement) {
         let element = self.render();
         let dom_node = element.to_dom();
@@ -55,18 +54,20 @@ pub trait Component: 'static {
 impl Element {
     pub fn to_dom(&self) -> Node {
         match self {
-            Element::Text(text) => {
-                web_sys::window()
-                    .unwrap()
-                    .document()
-                    .unwrap()
-                    .create_text_node(text)
-                    .into()
-            }
-            Element::Node { tag, props, children } => {
+            Element::Text(text) => web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .create_text_node(text)
+                .into(),
+            Element::Node {
+                tag,
+                props,
+                children,
+            } => {
                 let document = web_sys::window().unwrap().document().unwrap();
                 let element = document.create_element(tag).unwrap();
-                
+
                 // Apply props
                 if let Some(class) = &props.class {
                     element.set_class_name(class);
@@ -74,27 +75,26 @@ impl Element {
                 if let Some(id) = &props.id {
                     element.set_id(id);
                 }
-                
+
                 // Apply attributes
                 for (key, value) in &props.attributes {
                     element.set_attribute(key, value).unwrap();
                 }
-                
+
                 // Add children
                 for child in children {
                     element.append_child(&child.to_dom()).unwrap();
                 }
-                
+
                 element.into()
             }
-            Element::Component(component) => {
-                component.render().to_dom()
-            }
+            Element::Component(component) => component.render().to_dom(),
         }
     }
 }
 
 /// Reactive state hook
+#[derive(Clone)]
 pub struct State<T> {
     value: Rc<RefCell<T>>,
 }
@@ -105,17 +105,17 @@ impl<T: Clone> State<T> {
             value: Rc::new(RefCell::new(initial)),
         }
     }
-    
+
     pub fn get(&self) -> T {
         self.value.borrow().clone()
     }
-    
+
     pub fn set(&self, new_value: T) {
         *self.value.borrow_mut() = new_value;
         // Trigger re-render
         self.trigger_update();
     }
-    
+
     fn trigger_update(&self) {
         // TODO: Implement efficient re-rendering
         web_sys::console::log_1(&"State updated, re-render needed".into());
@@ -132,38 +132,51 @@ pub fn use_state<T: Clone + 'static>(initial: impl FnOnce() -> T) -> State<T> {
 macro_rules! view {
     // Text node
     ($text:expr) => {
-        Element::Text($text.to_string())
+        $crate::component::Element::Text($text.to_string())
     };
-    
-    // Element with children
-    (<$tag:ident $(class=$class:expr)? $(id=$id:expr)? > $($children:tt)* </$end_tag:ident>) => {{
+
+    // Simple element without attributes
+    (<$tag:ident> $($children:tt)* </$end_tag:ident>) => {{
         assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
-        
-        let mut props = Props::default();
-        $(props.class = Some($class.to_string());)?
-        $(props.id = Some($id.to_string());)?
-        
+
         let children = vec![$($crate::view!($children)),*];
-        
-        Element::Node {
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props: $crate::component::Props::default(),
+            children,
+        }
+    }};
+
+    // Self-closing element
+    (<$tag:ident />) => {{
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props: $crate::component::Props::default(),
+            children: vec![],
+        }
+    }};
+
+    // Element with class
+    (<$tag:ident class=$class:literal> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.class = Some($class.to_string());
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
             tag: stringify!($tag).to_string(),
             props,
             children,
         }
     }};
-    
-    // Self-closing element
-    (<$tag:ident $(class=$class:expr)? $(id=$id:expr)? />) => {{
-        let mut props = Props::default();
-        $(props.class = Some($class.to_string());)?
-        $(props.id = Some($id.to_string());)?
-        
-        Element::Node {
-            tag: stringify!($tag).to_string(),
-            props,
-            children: vec![],
-        }
-    }};
+
+    // Block expression
+    ({ $expr:expr }) => {
+        $crate::component::Element::Text($expr.to_string())
+    };
 }
 
 pub use view;

@@ -1,12 +1,12 @@
 //! Advanced Router with Browser History - L7
 
-use wasm_bindgen::prelude::*;
-use web_sys::{window, Window, History, Location, PopStateEvent};
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
 use crate::component::{Component, Element};
 use crate::state::{create_atom, use_atom, Atom};
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+use wasm_bindgen::prelude::*;
+use web_sys::{window, History, Location, PopStateEvent};
 
 /// Router configuration
 pub struct RouterConfig {
@@ -35,6 +35,18 @@ pub struct RouteState {
     pub params: RouteParams,
 }
 
+impl Default for RouteState {
+    fn default() -> Self {
+        RouteState {
+            path: "/".to_string(),
+            params: RouteParams {
+                params: HashMap::new(),
+                query: HashMap::new(),
+            },
+        }
+    }
+}
+
 /// Router instance
 pub struct Router {
     config: Rc<RouterConfig>,
@@ -48,7 +60,7 @@ impl Router {
         let window = window().ok_or("No window")?;
         let history = window.history()?;
         let location = window.location();
-        
+
         let initial_state = RouteState {
             path: location.pathname()?,
             params: RouteParams {
@@ -56,28 +68,28 @@ impl Router {
                 query: parse_query(&location.search()?),
             },
         };
-        
+
         let state = create_atom(initial_state);
-        
+
         let router = Router {
             config: Rc::new(config),
             state,
             history,
             location,
         };
-        
+
         // Setup popstate listener
         router.setup_listeners()?;
-        
+
         Ok(router)
     }
-    
+
     fn setup_listeners(&self) -> Result<(), JsValue> {
         let state = self.state.clone();
         let config = self.config.clone();
-        
+
         let closure = Closure::<dyn FnMut(_)>::new(move |_event: PopStateEvent| {
-            if let Ok(window) = window() {
+            if let Some(window) = window() {
                 if let Ok(pathname) = window.location().pathname() {
                     let new_state = RouteState {
                         path: pathname.clone(),
@@ -87,56 +99,50 @@ impl Router {
                 }
             }
         });
-        
+
         window()
             .ok_or("No window")?
             .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())?;
-        
+
         closure.forget(); // Keep closure alive
-        
+
         Ok(())
     }
-    
+
     pub fn navigate(&self, path: &str) -> Result<(), JsValue> {
         // Update browser history
-        self.history.push_state_with_url(
-            &JsValue::NULL,
-            "",
-            Some(path),
-        )?;
-        
+        self.history
+            .push_state_with_url(&JsValue::NULL, "", Some(path))?;
+
         // Update router state
         let new_state = RouteState {
             path: path.to_string(),
             params: match_route(path, &self.config.routes),
         };
         self.state.set(new_state);
-        
+
         Ok(())
     }
-    
+
     pub fn replace(&self, path: &str) -> Result<(), JsValue> {
         // Replace current history entry
-        self.history.replace_state_with_url(
-            &JsValue::NULL,
-            "",
-            Some(path),
-        )?;
-        
+        self.history
+            .replace_state_with_url(&JsValue::NULL, "", Some(path))?;
+
         // Update router state
         let new_state = RouteState {
             path: path.to_string(),
             params: match_route(path, &self.config.routes),
         };
         self.state.set(new_state);
-        
+
         Ok(())
     }
-    
+
     pub fn back(&self) -> Result<(), JsValue> {
         self.history.back()
     }
-    
+
     pub fn forward(&self) -> Result<(), JsValue> {
         self.history.forward()
     }
@@ -152,7 +158,7 @@ fn match_route(path: &str, routes: &[RouteDefinition]) -> RouteParams {
             };
         }
     }
-    
+
     RouteParams {
         params: HashMap::new(),
         query: HashMap::new(),
@@ -163,13 +169,13 @@ fn match_route(path: &str, routes: &[RouteDefinition]) -> RouteParams {
 fn match_path(pattern: &str, path: &str) -> Option<HashMap<String, String>> {
     let pattern_parts: Vec<&str> = pattern.split('/').filter(|s| !s.is_empty()).collect();
     let path_parts: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
-    
+
     if pattern_parts.len() != path_parts.len() {
         return None;
     }
-    
+
     let mut params = HashMap::new();
-    
+
     for (pattern_part, path_part) in pattern_parts.iter().zip(path_parts.iter()) {
         if pattern_part.starts_with(':') {
             // Dynamic segment
@@ -180,14 +186,14 @@ fn match_path(pattern: &str, path: &str) -> Option<HashMap<String, String>> {
             return None;
         }
     }
-    
+
     Some(params)
 }
 
 /// Parse query string
 fn parse_query(query: &str) -> HashMap<String, String> {
     let mut params = HashMap::new();
-    
+
     if query.starts_with('?') {
         let query = &query[1..];
         for pair in query.split('&') {
@@ -199,11 +205,10 @@ fn parse_query(query: &str) -> HashMap<String, String> {
             }
         }
     }
-    
+
     params
 }
 
-/// Router context for components
 thread_local! {
     static ROUTER: RefCell<Option<Rc<Router>>> = RefCell::new(None);
 }
@@ -244,12 +249,12 @@ impl Link {
             class: None,
         }
     }
-    
+
     pub fn children(mut self, children: Vec<Element>) -> Self {
         self.children = children;
         self
     }
-    
+
     pub fn class(mut self, class: impl Into<String>) -> Self {
         self.class = Some(class.into());
         self
@@ -264,7 +269,7 @@ impl Component for Link {
                 let _ = router.navigate(&to);
             }
         }) as Rc<dyn Fn()>);
-        
+
         Element::Node {
             tag: "a".to_string(),
             props: crate::component::Props {
@@ -295,12 +300,12 @@ impl Component for Route {
                         return component.render();
                     }
                 }
-                
+
                 // No match - render 404
                 return router.config.not_found.render();
             }
         }
-        
+
         // Fallback
         Element::Text("Router not initialized".to_string())
     }

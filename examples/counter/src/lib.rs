@@ -1,179 +1,211 @@
-//! Counter Example - Demonstrates Layer9's hierarchical architecture
+//! Layer9 Counter Example - Minimal Version
 
-use layer9_framework::prelude::*;
 use wasm_bindgen::prelude::*;
-use web_sys::console;
+use web_sys::{Document, Element};
 
-// L9: Philosophy
-struct CounterPhilosophy;
+// Simple counter state
+static mut COUNTER: i32 = 0;
 
-impl L9::Philosophy for CounterPhilosophy {
-    fn vision(&self) -> &'static str {
-        "Demonstrate that even simple interactions have deep structure"
-    }
-    
-    fn purpose(&self) -> &'static str {
-        "Show how counting connects to universal computation"
-    }
-}
-
-// L8: Architecture
-struct CounterArchitecture;
-
-impl L8::Architecture for CounterArchitecture {
-    type App = CounterApp;
-    
-    fn design() -> L8::ArchitectureDesign {
-        L8::ArchitectureDesign {
-            layers: vec![
-                Layer::L1Infrastructure,
-                Layer::L2Platform,
-                Layer::L3Runtime,
-                Layer::L4Services,
-                Layer::L5Components,
-                Layer::L6Features,
-                Layer::L7Application,
-                Layer::L8Architecture,
-                Layer::L9Philosophy,
-            ],
-            boundaries: vec![
-                (Layer::L7Application, Layer::L5Components),
-                (Layer::L5Components, Layer::L4Services),
-            ],
-        }
-    }
-}
-
-// L7: Application
-struct CounterApp;
-
-impl L7::Application for CounterApp {
-    type State = CounterState;
-    type Action = CounterAction;
-    
-    fn reduce(state: &Self::State, action: Self::Action) -> Self::State {
-        match action {
-            CounterAction::Increment => CounterState {
-                count: state.count + 1,
-                ..state.clone()
-            },
-            CounterAction::Decrement => CounterState {
-                count: state.count - 1,
-                ..state.clone()
-            },
-            CounterAction::Reset => CounterState {
-                count: 0,
-                ..state.clone()
-            },
-        }
-    }
-}
-
-#[derive(Clone)]
-struct CounterState {
-    count: i32,
-    history: Vec<i32>,
-}
-
-enum CounterAction {
-    Increment,
-    Decrement,
-    Reset,
-}
-
-// L5: Components
-struct Counter {
-    count: State<i32>,
-}
-
-impl Counter {
-    fn new() -> Self {
-        Counter {
-            count: use_state(|| 0),
-        }
-    }
-}
-
-impl Component for Counter {
-    fn render(&self) -> Element {
-        let count = self.count.get();
-        
-        view! {
-            <div class="counter-container">
-                <h1>"Layer9 Counter Example"</h1>
-                <p>"Count: " {count.to_string()}</p>
-                <div class="buttons">
-                    <button id="increment">"+"</button>
-                    <button id="decrement">"-"</button>
-                    <button id="reset">"Reset"</button>
-                </div>
-                <div class="philosophy">
-                    <p>"This simple counter demonstrates Layer9's hierarchical architecture"</p>
-                    <p>"From L9 (Philosophy) to L1 (Infrastructure), every layer has its purpose"</p>
-                </div>
-            </div>
-        }
-    }
-}
-
-// L4: Server Functions
-server_function! {
-    fn get_counter_stats() -> CounterStats {
-        Ok(CounterStats {
-            total_clicks: 42,
-            average_value: 7,
-            peak_value: 100,
-        })
-    }
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-struct CounterStats {
-    total_clicks: u32,
-    average_value: f64,
-    peak_value: i32,
-}
-
-// Main app setup
-#[wasm_bindgen]
-pub struct App;
-
-impl Layer9App for App {
-    fn routes(&self) -> Vec<Route> {
-        vec![
-            Route {
-                path: "/".to_string(),
-                handler: RouteHandler::Page(|| {
-                    Page::new()
-                        .title("Layer9 Counter")
-                        .component(Counter::new())
-                }),
-            },
-        ]
-    }
-    
-    fn initialize(&self) {
-        console::log_1(&"Layer9 Counter App initialized!".into());
-        console::log_1(&"Hierarchical layers active:".into());
-        console::log_1(&"L9: Philosophy - Why we count".into());
-        console::log_1(&"L8: Architecture - How we structure counting".into());
-        console::log_1(&"L7: Application - Counter business logic".into());
-        console::log_1(&"L5: Components - UI representation".into());
-        console::log_1(&"L4: Services - Server communication".into());
-        console::log_1(&"L1-L3: Infrastructure & Runtime".into());
-    }
-}
-
-impl L8::Architecture for App {
-    type App = CounterApp;
-    
-    fn design() -> L8::ArchitectureDesign {
-        CounterArchitecture::design()
-    }
-}
-
-// Entry point
 #[wasm_bindgen(start)]
-pub fn main() {
-    run_app(App);
+pub fn main() -> Result<(), JsValue> {
+    // Set panic hook for better error messages in browser
+    console_error_panic_hook::set_once();
+
+    // Get document and body
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+    let body = document.body().unwrap();
+
+    // Clear body
+    body.set_inner_html("");
+
+    // Create container
+    let container = create_element(&document, "div")?;
+    container.set_class_name("layer9-app");
+
+    // Create title
+    let title = create_element(&document, "h1")?;
+    title.set_text_content(Some("Layer9 Counter"));
+    container.append_child(&title)?;
+
+    // Create counter display
+    let counter_display = create_element(&document, "p")?;
+    counter_display.set_id("counter-display");
+    update_counter_display(&document)?;
+    container.append_child(&counter_display)?;
+
+    // Create button container
+    let button_container = create_element(&document, "div")?;
+    button_container.set_class_name("button-container");
+
+    // Create increment button
+    let inc_button = create_element(&document, "button")?;
+    inc_button.set_text_content(Some("Increment"));
+    inc_button.set_class_name("btn btn-primary");
+
+    // Add click handler
+    let inc_closure = Closure::wrap(Box::new(move || {
+        unsafe {
+            COUNTER += 1;
+        }
+        let doc = web_sys::window().unwrap().document().unwrap();
+        update_counter_display(&doc).unwrap();
+    }) as Box<dyn Fn()>);
+
+    inc_button.add_event_listener_with_callback("click", inc_closure.as_ref().unchecked_ref())?;
+    inc_closure.forget();
+
+    // Create decrement button
+    let dec_button = create_element(&document, "button")?;
+    dec_button.set_text_content(Some("Decrement"));
+    dec_button.set_class_name("btn btn-secondary");
+
+    let dec_closure = Closure::wrap(Box::new(move || {
+        unsafe {
+            COUNTER -= 1;
+        }
+        let doc = web_sys::window().unwrap().document().unwrap();
+        update_counter_display(&doc).unwrap();
+    }) as Box<dyn Fn()>);
+
+    dec_button.add_event_listener_with_callback("click", dec_closure.as_ref().unchecked_ref())?;
+    dec_closure.forget();
+
+    // Create reset button
+    let reset_button = create_element(&document, "button")?;
+    reset_button.set_text_content(Some("Reset"));
+    reset_button.set_class_name("btn btn-warning");
+
+    let reset_closure = Closure::wrap(Box::new(move || {
+        unsafe {
+            COUNTER = 0;
+        }
+        let doc = web_sys::window().unwrap().document().unwrap();
+        update_counter_display(&doc).unwrap();
+    }) as Box<dyn Fn()>);
+
+    reset_button
+        .add_event_listener_with_callback("click", reset_closure.as_ref().unchecked_ref())?;
+    reset_closure.forget();
+
+    // Add buttons to container
+    button_container.append_child(&inc_button)?;
+    button_container.append_child(&dec_button)?;
+    button_container.append_child(&reset_button)?;
+    container.append_child(&button_container)?;
+
+    // Add some info
+    let info = create_element(&document, "p")?;
+    info.set_class_name("info");
+    info.set_inner_html("Built with <strong>Layer9</strong> - A Rust Web Framework");
+    container.append_child(&info)?;
+
+    // Add container to body
+    body.append_child(&container)?;
+
+    // Add some basic styles
+    add_styles(&document)?;
+
+    // Log success
+    web_sys::console::log_1(&"Layer9 Counter App initialized!".into());
+
+    Ok(())
+}
+
+fn create_element(document: &Document, tag: &str) -> Result<Element, JsValue> {
+    document.create_element(tag)
+}
+
+fn update_counter_display(document: &Document) -> Result<(), JsValue> {
+    let display = document.get_element_by_id("counter-display").unwrap();
+    unsafe {
+        display.set_text_content(Some(&format!("Count: {}", COUNTER)));
+    }
+    Ok(())
+}
+
+fn add_styles(document: &Document) -> Result<(), JsValue> {
+    let style = document.create_element("style")?;
+    style.set_text_content(Some(
+        r#"
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .layer9-app {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        #counter-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 30px 0;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .info {
+            margin-top: 40px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info strong {
+            color: #007bff;
+        }
+    "#,
+    ));
+
+    let head = document.query_selector("head")?.unwrap();
+    head.append_child(&style)?;
+    Ok(())
 }

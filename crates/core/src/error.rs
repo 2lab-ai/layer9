@@ -1,10 +1,9 @@
 //! Error Boundaries - L5/L6
 
 use crate::prelude::*;
+use std::cell::RefCell;
 use std::panic;
 use std::rc::Rc;
-use std::cell::RefCell;
-use wasm_bindgen::prelude::*;
 
 /// Error boundary state
 #[derive(Clone)]
@@ -40,65 +39,47 @@ impl ErrorBoundary {
             })),
         }
     }
-    
+
     pub fn fallback(mut self, fallback: impl Fn(&ErrorInfo) -> Element + 'static) -> Self {
         self.fallback = Box::new(fallback);
         self
     }
-    
+
     pub fn on_error(mut self, handler: impl Fn(&ErrorInfo) + 'static) -> Self {
         self.on_error = Some(Box::new(handler));
         self
     }
-    
+
     fn catch_error(&self) -> Element {
-        // Set up panic hook to catch errors
-        let state = self.state.clone();
-        let prev_hook = panic::take_hook();
-        
-        panic::set_hook(Box::new(move |panic_info| {
-            let message = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown error".to_string()
-            };
-            
-            let location = panic_info.location()
-                .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
-                .unwrap_or_else(|| "Unknown location".to_string());
-            
-            let error_info = ErrorInfo {
-                message: format!("{} at {}", message, location),
-                stack: Some(format!("{:?}", panic_info)),
-                component_stack: vec![], // TODO: Implement component stack tracking
-            };
-            
-            state.borrow_mut().error = Some(error_info);
-            state.borrow_mut().error_count += 1;
-        }));
-        
         // Try to render children
-        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-            self.children.render()
-        }));
-        
-        // Restore previous panic hook
-        panic::set_hook(prev_hook);
-        
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| self.children.render()));
+
         match result {
             Ok(element) => element,
-            Err(_) => {
-                // Render fallback
-                if let Some(error_info) = &self.state.borrow().error {
-                    if let Some(handler) = &self.on_error {
-                        handler(error_info);
-                    }
-                    (self.fallback)(error_info)
+            Err(err) => {
+                // Extract error message
+                let message = if let Some(s) = err.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = err.downcast_ref::<String>() {
+                    s.clone()
                 } else {
-                    Element::Text("An error occurred".to_string())
+                    "Unknown error".to_string()
+                };
+
+                let error_info = ErrorInfo {
+                    message,
+                    stack: None,
+                    component_stack: vec![], // TODO: Implement component stack tracking
+                };
+
+                self.state.borrow_mut().error = Some(error_info.clone());
+                self.state.borrow_mut().error_count += 1;
+
+                if let Some(handler) = &self.on_error {
+                    handler(&error_info);
                 }
+
+                (self.fallback)(&error_info)
             }
         }
     }
@@ -110,7 +91,7 @@ impl Component for ErrorBoundary {
         if let Some(error_info) = &self.state.borrow().error {
             return (self.fallback)(error_info);
         }
-        
+
         // Try to render children with error catching
         self.catch_error()
     }
@@ -118,22 +99,26 @@ impl Component for ErrorBoundary {
 
 /// Default error fallback UI
 fn default_error_fallback(error: &ErrorInfo) -> Element {
-    view! {
-        <div class="error-boundary-fallback">
-            <h2>"Something went wrong"</h2>
-            <details style="white-space: pre-wrap">
-                <summary>"Error details"</summary>
-                <p>{&error.message}</p>
-                {if let Some(stack) = &error.stack {
-                    view! { <pre>{stack}</pre> }
-                } else {
-                    view! { <div /> }
-                }}
-            </details>
-            <button onclick="window.location.reload()">
-                "Reload page"
-            </button>
-        </div>
+    use crate::component::{Element, Props};
+
+    let mut props = Props::default();
+    props.class = Some("error-boundary-fallback".to_string());
+
+    Element::Node {
+        tag: "div".to_string(),
+        props,
+        children: vec![
+            Element::Node {
+                tag: "h2".to_string(),
+                props: Props::default(),
+                children: vec![Element::Text("Something went wrong".to_string())],
+            },
+            Element::Node {
+                tag: "p".to_string(),
+                props: Props::default(),
+                children: vec![Element::Text(error.message.clone())],
+            },
+        ],
     }
 }
 
@@ -150,7 +135,7 @@ impl ErrorLogger {
             api_key: api_key.into(),
         }
     }
-    
+
     pub async fn log_error(&self, error: &ErrorInfo) -> Result<(), FetchError> {
         let payload = serde_json::json!({
             "message": error.message,
@@ -160,28 +145,31 @@ impl ErrorLogger {
             "user_agent": window().unwrap().navigator().user_agent().unwrap(),
             "url": window().unwrap().location().href().unwrap(),
         });
-        
+
         FetchBuilder::new(&self.endpoint)
             .method(Method::POST)
             .header("X-API-Key", &self.api_key)
             .json(&payload)?
             .send()
             .await?;
-        
+
         Ok(())
     }
 }
 
 /// Global error handler
-static ERROR_LOGGER: once_cell::sync::Lazy<Option<ErrorLogger>> = once_cell::sync::Lazy::new(|| None);
+static ERROR_LOGGER: once_cell::sync::Lazy<Option<ErrorLogger>> =
+    once_cell::sync::Lazy::new(|| None);
 
-pub fn init_error_logging(endpoint: impl Into<String>, api_key: impl Into<String>) {
+pub fn init_error_logging(_endpoint: impl Into<String>, _api_key: impl Into<String>) {
     // This is a simplification - in real code you'd use a Mutex
     // ERROR_LOGGER = Some(ErrorLogger::new(endpoint, api_key));
 }
 
 /// Catch async errors
-pub async fn catch_async<T, E>(future: impl std::future::Future<Output = Result<T, E>>) -> Result<T, String> 
+pub async fn catch_async<T, E>(
+    future: impl std::future::Future<Output = Result<T, E>>,
+) -> Result<T, String>
 where
     E: std::fmt::Display,
 {
@@ -189,7 +177,7 @@ where
         Ok(value) => Ok(value),
         Err(e) => {
             let error_msg = e.to_string();
-            
+
             // Log error if logger is configured
             if let Some(logger) = ERROR_LOGGER.as_ref() {
                 let error_info = ErrorInfo {
@@ -197,12 +185,19 @@ where
                     stack: None,
                     component_stack: vec![],
                 };
-                
+
                 let _ = logger.log_error(&error_info).await;
             }
-            
+
             Err(error_msg)
         }
+    }
+}
+
+/// Hook to handle errors in components
+pub fn use_error_handler() -> impl Fn(String) {
+    move |error: String| {
+        web_sys::console::error_1(&format!("Error: {}", error).into());
     }
 }
 

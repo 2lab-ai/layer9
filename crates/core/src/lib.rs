@@ -1,5 +1,5 @@
 //! Layer9 Core - Hierarchical Web Framework
-//! 
+//!
 //! L9 Philosophy: Consciousness-aware web development
 //! L8 Architecture: Enforced layer separation
 //! L7 Application: Business logic isolation
@@ -10,62 +10,65 @@
 //! L2 Platform: Next.js compatibility
 //! L1 Infrastructure: Build and deploy
 
-pub mod layers;
-pub mod component;
-pub mod router;
-pub mod router_v2;
-pub mod server;
-pub mod vdom;
+pub mod api_docs;
 pub mod app;
 pub mod auth;
-pub mod styles;
-pub mod ui;
-pub mod ssr;
-pub mod fetch;
-pub mod state;
-pub mod error;
-pub mod form;
-pub mod upload;
-pub mod websocket;
-pub mod middleware;
-pub mod env;
-pub mod image;
-pub mod test;
-pub mod db;
-pub mod i18n;
 pub mod cache;
-pub mod security;
+pub mod component;
+pub mod db;
+pub mod env;
+pub mod error;
+pub mod fetch;
+pub mod form;
+pub mod i18n;
+pub mod image;
+pub mod layers;
+pub mod middleware;
 pub mod monitoring;
-pub mod api_docs;
+pub mod router;
+pub mod router_v2;
+pub mod security;
+pub mod server;
+#[cfg(feature = "ssr")]
+pub mod ssr;
+pub mod state;
+pub mod styles;
+pub mod test;
+pub mod ui;
+pub mod upload;
+pub mod vdom;
+pub mod websocket;
 
 pub mod prelude {
-    pub use crate::layers::*;
-    pub use crate::component::{Component, Element, view, Props};
-    pub use crate::router::{Page, Route, RouteHandler};
-    pub use crate::router_v2::{init_router, use_router, use_route, Link, navigate, route};
-    pub use crate::server::{ServerFunction, Response};
-    pub use crate::app::{Layer9App, run_app};
-    pub use crate::auth::{AuthService, use_auth, Protected};
-    pub use crate::styles::{style, StyleBuilder, inject_global_styles};
-    pub use crate::ui::*;
-    pub use crate::ssr::{SSRApp, SSRComponent, create_ssr_server, hydrate_app, SSG};
-    pub use crate::fetch::{FetchBuilder, get, post, SWR, Method};
-    pub use crate::state::{create_atom, use_atom, use_selector, create_app_store, AppState, AppAction};
-    pub use crate::error::{ErrorBoundary, use_error_handler};
+    pub use crate::api_docs::{ApiDoc, OpenApiBuilder, SchemaBuilder};
+    pub use crate::app::{run_app, Layer9App};
+    pub use crate::auth::{use_auth, AuthService, Protected};
+    pub use crate::cache::{use_cache, use_http_cache, InvalidationStrategy};
+    pub use crate::component::{use_state, view, Component, Element, Props, State};
+    pub use crate::db::{use_db, use_repository, Model, QueryBuilder};
+    pub use crate::env::{env, env_or, is_development, is_production};
+    pub use crate::error::{use_error_handler, ErrorBoundary};
+    pub use crate::fetch::{get, post, FetchBuilder, Method, SWR};
     pub use crate::form::{use_form, Form, FormConfig};
+    pub use crate::i18n::{use_i18n, Locale};
+    pub use crate::image::{Image, Picture};
+    pub use crate::layers::*;
+    pub use crate::middleware::{Context, Middleware, MiddlewareStack};
+    pub use crate::monitoring::{use_analytics, use_metrics, use_performance};
+    pub use crate::router::{Page, Route, RouteHandler};
+    pub use crate::router_v2::{init_router, navigate, route, use_route, use_router, Link};
+    pub use crate::security::{use_csrf_token, use_security, XssProtection};
+    pub use crate::server::{Response, ServerError, ServerFunction};
+    #[cfg(feature = "ssr")]
+    pub use crate::ssr::{create_ssr_server, hydrate_app, SSRApp, SSRComponent, SSG};
+    pub use crate::state::{
+        create_app_store, create_atom, use_atom, use_selector, AppAction, AppState,
+    };
+    pub use crate::styles::{inject_global_styles, style, StyleBuilder};
+    pub use crate::test::{TestContext, TestResult, TestUtils};
+    pub use crate::ui::*;
     pub use crate::upload::{use_upload, UploadConfig};
     pub use crate::websocket::{use_websocket, WsMessage, WsState};
-    pub use crate::middleware::{MiddlewareStack, Middleware, Context};
-    pub use crate::env::{env, env_or, is_production, is_development};
-    pub use crate::image::{Image, Picture};
-    pub use crate::test::{TestContext, TestResult, TestUtils};
-    pub use crate::db::{use_db, use_repository, Model, QueryBuilder};
-    pub use crate::i18n::{use_i18n, t, plural, Locale};
-    pub use crate::cache::{use_cache, use_http_cache, InvalidationStrategy};
-    pub use crate::security::{use_security, use_csrf_token, XssProtection};
-    pub use crate::monitoring::{use_metrics, use_performance, use_analytics};
-    pub use crate::api_docs::{OpenApiBuilder, ApiDoc, SchemaBuilder};
-    pub use layer9_macro::{layer9_app, page, component, server};
 }
 
 // Layer validation at compile time
@@ -73,7 +76,10 @@ pub mod prelude {
 macro_rules! enforce_layer {
     ($from:expr, $to:expr) => {
         const _: () = {
-            assert!($from >= $to, "Invalid layer access: higher layers cannot access lower layers directly");
+            assert!(
+                $from >= $to,
+                "Invalid layer access: higher layers cannot access lower layers directly"
+            );
         };
     };
 }

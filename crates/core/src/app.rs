@@ -1,9 +1,7 @@
 //! Application Structure - L8
 
 use crate::layers::*;
-use crate::router::{Router, Route};
-use wasm_bindgen::prelude::*;
-use std::sync::Mutex;
+use crate::router::{Route, Router};
 
 /// Main application trait
 pub trait Layer9App: L8::Architecture {
@@ -11,37 +9,26 @@ pub trait Layer9App: L8::Architecture {
     fn initialize(&self);
 }
 
-/// Global app instance
-static APP: Mutex<Option<Box<dyn Layer9App>>> = Mutex::new(None);
-
+/// Global app instance (type-erased)
 /// Initialize and run the app
-#[wasm_bindgen]
-pub fn run_app(app: impl Layer9App + 'static) {
+pub fn run_app<T: Layer9App + 'static>(app: T) {
     // Set panic hook for better error messages
     console_error_panic_hook::set_once();
-    
-    // Store app instance
-    {
-        let mut global_app = APP.lock().unwrap();
-        *global_app = Some(Box::new(app));
+
+    // Initialize app
+    app.initialize();
+
+    // Setup router
+    let mut router = Router::new();
+    for route in app.routes() {
+        router.add_route(route);
     }
-    
-    // Initialize
-    if let Some(app) = APP.lock().unwrap().as_ref() {
-        app.initialize();
-        
-        // Setup router
-        let mut router = Router::new();
-        for route in app.routes() {
-            router.add_route(route);
-        }
-        
-        // Navigate to current path
-        let window = web_sys::window().unwrap();
-        let location = window.location();
-        let pathname = location.pathname().unwrap();
-        router.navigate(&pathname);
-    }
+
+    // Navigate to current path
+    let window = web_sys::window().unwrap();
+    let location = window.location();
+    let pathname = location.pathname().unwrap();
+    router.navigate(&pathname);
 }
 
 /// App builder
@@ -57,21 +44,25 @@ impl AppBuilder {
             routes: vec![],
         }
     }
-    
+
     pub fn route(mut self, route: Route) -> Self {
         self.routes.push(route);
         self
     }
-    
+
     pub fn build(self) -> impl Layer9App {
         struct BuiltApp {
             name: String,
             routes: Vec<Route>,
         }
-        
+
+        impl LayerBound for BuiltApp {
+            const LAYER: Layer = Layer::L8Architecture;
+        }
+
         impl L8::Architecture for BuiltApp {
             type App = DummyApp;
-            
+
             fn design() -> L8::ArchitectureDesign {
                 L8::ArchitectureDesign {
                     layers: vec![
@@ -89,28 +80,32 @@ impl AppBuilder {
                 }
             }
         }
-        
+
         impl Layer9App for BuiltApp {
             fn routes(&self) -> Vec<Route> {
                 self.routes.clone()
             }
-            
+
             fn initialize(&self) {
                 web_sys::console::log_1(&format!("Layer9 App '{}' initialized", self.name).into());
             }
         }
-        
+
         // Dummy app type for now
         struct DummyApp;
+
+        impl LayerBound for DummyApp {
+            const LAYER: Layer = Layer::L7Application;
+        }
+
         impl L7::Application for DummyApp {
             type State = ();
             type Action = ();
-            
+
             fn reduce(_state: &Self::State, _action: Self::Action) -> Self::State {
-                ()
             }
         }
-        
+
         BuiltApp {
             name: self.name,
             routes: self.routes,
