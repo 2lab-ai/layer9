@@ -23,6 +23,20 @@ pub mod ui;
 pub mod ssr;
 pub mod fetch;
 pub mod state;
+pub mod error;
+pub mod form;
+pub mod upload;
+pub mod websocket;
+pub mod middleware;
+pub mod env;
+pub mod image;
+pub mod test;
+pub mod db;
+pub mod i18n;
+pub mod cache;
+pub mod security;
+pub mod monitoring;
+pub mod api_docs;
 
 pub mod prelude {
     pub use crate::layers::*;
@@ -37,6 +51,20 @@ pub mod prelude {
     pub use crate::ssr::{SSRApp, SSRComponent, create_ssr_server, hydrate_app, SSG};
     pub use crate::fetch::{FetchBuilder, get, post, SWR, Method};
     pub use crate::state::{create_atom, use_atom, use_selector, create_app_store, AppState, AppAction};
+    pub use crate::error::{ErrorBoundary, use_error_handler};
+    pub use crate::form::{use_form, Form, FormConfig};
+    pub use crate::upload::{use_upload, UploadConfig};
+    pub use crate::websocket::{use_websocket, WsMessage, WsState};
+    pub use crate::middleware::{MiddlewareStack, Middleware, Context};
+    pub use crate::env::{env, env_or, is_production, is_development};
+    pub use crate::image::{Image, Picture};
+    pub use crate::test::{TestContext, TestResult, TestUtils};
+    pub use crate::db::{use_db, use_repository, Model, QueryBuilder};
+    pub use crate::i18n::{use_i18n, t, plural, Locale};
+    pub use crate::cache::{use_cache, use_http_cache, InvalidationStrategy};
+    pub use crate::security::{use_security, use_csrf_token, XssProtection};
+    pub use crate::monitoring::{use_metrics, use_performance, use_analytics};
+    pub use crate::api_docs::{OpenApiBuilder, ApiDoc, SchemaBuilder};
     pub use warp_macro::{warp_app, page, component, server};
 }
 

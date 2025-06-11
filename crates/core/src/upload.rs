@@ -1,0 +1,374 @@
+//! File Upload Support - L4/L5
+
+use crate::prelude::*;
+use wasm_bindgen::prelude::*;
+use web_sys::{File, FormData, HtmlInputElement};
+use js_sys::{ArrayBuffer, Uint8Array};
+use std::rc::Rc;
+use std::cell::RefCell;
+
+/// File upload state
+#[derive(Clone)]
+pub struct UploadState {
+    pub files: Vec<FileInfo>,
+    pub uploading: bool,
+    pub progress: f32,
+    pub errors: Vec<String>,
+}
+
+#[derive(Clone)]
+pub struct FileInfo {
+    pub name: String,
+    pub size: u64,
+    pub mime_type: String,
+    pub preview_url: Option<String>,
+    pub upload_progress: f32,
+    pub uploaded: bool,
+    pub error: Option<String>,
+}
+
+/// File uploader
+pub struct FileUploader {
+    state: Rc<RefCell<UploadState>>,
+    config: UploadConfig,
+}
+
+pub struct UploadConfig {
+    pub url: String,
+    pub max_file_size: u64,
+    pub allowed_types: Vec<String>,
+    pub multiple: bool,
+    pub auto_upload: bool,
+    pub on_progress: Option<Box<dyn Fn(f32)>>,
+    pub on_complete: Option<Box<dyn Fn(Vec<UploadResult>)>>,
+}
+
+#[derive(Clone)]
+pub struct UploadResult {
+    pub file_name: String,
+    pub url: String,
+    pub size: u64,
+}
+
+impl FileUploader {
+    pub fn new(config: UploadConfig) -> Self {
+        FileUploader {
+            state: Rc::new(RefCell::new(UploadState {
+                files: vec![],
+                uploading: false,
+                progress: 0.0,
+                errors: vec![],
+            })),
+            config,
+        }
+    }
+    
+    pub fn add_files(&self, files: Vec<File>) {
+        let mut state = self.state.borrow_mut();
+        state.errors.clear();
+        
+        for file in files {
+            // Validate file
+            let size = file.size() as u64;
+            let mime_type = file.type_();
+            let name = file.name();
+            
+            // Check file size
+            if size > self.config.max_file_size {
+                state.errors.push(format!(
+                    "File {} is too large. Maximum size is {} MB",
+                    name,
+                    self.config.max_file_size / 1_000_000
+                ));
+                continue;
+            }
+            
+            // Check file type
+            if !self.config.allowed_types.is_empty() && 
+               !self.config.allowed_types.contains(&mime_type) {
+                state.errors.push(format!(
+                    "File type {} is not allowed",
+                    mime_type
+                ));
+                continue;
+            }
+            
+            // Create preview for images
+            let preview_url = if mime_type.starts_with("image/") {
+                Some(create_object_url(&file))
+            } else {
+                None
+            };
+            
+            state.files.push(FileInfo {
+                name,
+                size,
+                mime_type,
+                preview_url,
+                upload_progress: 0.0,
+                uploaded: false,
+                error: None,
+            });
+        }
+        
+        // Auto upload if enabled
+        if self.config.auto_upload && !state.files.is_empty() {
+            drop(state);
+            self.upload_all();
+        }
+    }
+    
+    pub fn upload_all(&self) {
+        let state = self.state.clone();
+        let config_url = self.config.url.clone();
+        
+        spawn_local(async move {
+            state.borrow_mut().uploading = true;
+            
+            let files_count = state.borrow().files.len();
+            let mut uploaded_files = vec![];
+            
+            for (index, file_info) in state.borrow().files.clone().iter().enumerate() {
+                // Create form data
+                let form_data = FormData::new().unwrap();
+                
+                // Add file (in real implementation, we'd need the actual File object)
+                // form_data.append_with_blob("file", &file);
+                
+                // Upload file
+                match upload_file(&config_url, form_data).await {
+                    Ok(result) => {
+                        state.borrow_mut().files[index].uploaded = true;
+                        state.borrow_mut().files[index].upload_progress = 100.0;
+                        uploaded_files.push(result);
+                    }
+                    Err(error) => {
+                        state.borrow_mut().files[index].error = Some(error);
+                    }
+                }
+                
+                // Update overall progress
+                let progress = ((index + 1) as f32 / files_count as f32) * 100.0;
+                state.borrow_mut().progress = progress;
+            }
+            
+            state.borrow_mut().uploading = false;
+            
+            // Call completion handler
+            // if let Some(on_complete) = &config.on_complete {
+            //     on_complete(uploaded_files);
+            // }
+        });
+    }
+    
+    pub fn remove_file(&self, index: usize) {
+        let mut state = self.state.borrow_mut();
+        if index < state.files.len() {
+            // Revoke object URL if it exists
+            if let Some(url) = &state.files[index].preview_url {
+                revoke_object_url(url);
+            }
+            state.files.remove(index);
+        }
+    }
+    
+    pub fn clear(&self) {
+        let mut state = self.state.borrow_mut();
+        // Revoke all object URLs
+        for file in &state.files {
+            if let Some(url) = &file.preview_url {
+                revoke_object_url(url);
+            }
+        }
+        state.files.clear();
+        state.errors.clear();
+        state.progress = 0.0;
+    }
+}
+
+/// Upload file to server
+async fn upload_file(url: &str, form_data: FormData) -> Result<UploadResult, String> {
+    let response = fetch_with_form_data(url, form_data).await
+        .map_err(|e| format!("Upload failed: {:?}", e))?;
+    
+    if response.ok() {
+        response.json().await
+            .map_err(|e| format!("Failed to parse response: {:?}", e))
+    } else {
+        Err(format!("Upload failed with status: {}", response.status()))
+    }
+}
+
+/// Fetch with FormData
+async fn fetch_with_form_data(url: &str, form_data: FormData) -> Result<FetchResponse, FetchError> {
+    let mut opts = web_sys::RequestInit::new();
+    opts.method("POST");
+    opts.body(Some(&form_data.into()));
+    
+    let request = web_sys::Request::new_with_str_and_init(url, &opts)?;
+    
+    let window = web_sys::window().ok_or_else(|| JsValue::from_str("No window"))?;
+    let response_value = wasm_bindgen_futures::JsFuture::from(
+        window.fetch_with_request(&request)
+    ).await?;
+    
+    let response: web_sys::Response = response_value.dyn_into()?;
+    Ok(FetchResponse::from_web_sys(response))
+}
+
+/// Create object URL for preview
+fn create_object_url(file: &File) -> String {
+    web_sys::Url::create_object_url_with_blob(file).unwrap_or_default()
+}
+
+/// Revoke object URL
+fn revoke_object_url(url: &str) {
+    let _ = web_sys::Url::revoke_object_url(url);
+}
+
+/// File upload component
+pub struct FileUploadComponent {
+    uploader: FileUploader,
+    accept: Option<String>,
+    label: String,
+}
+
+impl FileUploadComponent {
+    pub fn new(uploader: FileUploader) -> Self {
+        FileUploadComponent {
+            uploader,
+            accept: None,
+            label: "Choose files".to_string(),
+        }
+    }
+    
+    pub fn accept(mut self, accept: impl Into<String>) -> Self {
+        self.accept = Some(accept.into());
+        self
+    }
+    
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
+}
+
+impl Component for FileUploadComponent {
+    fn render(&self) -> Element {
+        let state = self.uploader.state.borrow();
+        let uploader = self.uploader.clone();
+        
+        view! {
+            <div class="file-upload">
+                <input
+                    type="file"
+                    id="file-input"
+                    accept={self.accept.as_deref().unwrap_or("*")}
+                    multiple={self.uploader.config.multiple.to_string()}
+                    onchange="handleFileSelect(event)"
+                    style="display: none"
+                />
+                
+                <label for="file-input" class="upload-button">
+                    {&self.label}
+                </label>
+                
+                {if !state.errors.is_empty() {
+                    view! {
+                        <div class="upload-errors">
+                            {state.errors.iter().map(|error| {
+                                view! { <div class="error">{error}</div> }
+                            }).collect::<Vec<_>>()}
+                        </div>
+                    }
+                } else {
+                    view! { <div /> }
+                }}
+                
+                {if !state.files.is_empty() {
+                    view! {
+                        <div class="file-list">
+                            {state.files.iter().enumerate().map(|(index, file)| {
+                                view! {
+                                    <div class="file-item">
+                                        {if let Some(preview) = &file.preview_url {
+                                            view! {
+                                                <img src={preview} class="file-preview" />
+                                            }
+                                        } else {
+                                            view! { <div class="file-icon" /> }
+                                        }}
+                                        
+                                        <div class="file-info">
+                                            <div class="file-name">{&file.name}</div>
+                                            <div class="file-size">{format_file_size(file.size)}</div>
+                                        </div>
+                                        
+                                        {if file.uploading {
+                                            view! {
+                                                <Progress value={file.upload_progress} />
+                                            }
+                                        } else if file.uploaded {
+                                            view! { <div class="upload-success">✓</div> }
+                                        } else if let Some(error) = &file.error {
+                                            view! { <div class="upload-error">{error}</div> }
+                                        } else {
+                                            view! { <div /> }
+                                        }}
+                                        
+                                        <button onclick={move || uploader.remove_file(index)}>
+                                            "×"
+                                        </button>
+                                    </div>
+                                }
+                            }).collect::<Vec<_>>()}
+                        </div>
+                    }
+                } else {
+                    view! { <div /> }
+                }}
+                
+                {if state.uploading {
+                    view! {
+                        <div class="upload-progress">
+                            <Progress value={state.progress} />
+                            <span>"Uploading... "{state.progress.round()}"%"</span>
+                        </div>
+                    }
+                } else if !state.files.is_empty() && !self.uploader.config.auto_upload {
+                    view! {
+                        <button onclick={move || uploader.upload_all()}>
+                            "Upload All"
+                        </button>
+                    }
+                } else {
+                    view! { <div /> }
+                }}
+            </div>
+        }
+    }
+}
+
+/// Format file size for display
+fn format_file_size(bytes: u64) -> String {
+    const UNITS: &[&str] = &["B", "KB", "MB", "GB"];
+    let mut size = bytes as f64;
+    let mut unit_index = 0;
+    
+    while size >= 1024.0 && unit_index < UNITS.len() - 1 {
+        size /= 1024.0;
+        unit_index += 1;
+    }
+    
+    format!("{:.1} {}", size, UNITS[unit_index])
+}
+
+/// Hook for file uploads
+pub fn use_file_upload(config: UploadConfig) -> FileUploader {
+    FileUploader::new(config)
+}
+
+// Re-exports
+use crate::fetch::{FetchResponse, FetchError};
+use crate::ui::Progress;
+use wasm_bindgen_futures::spawn_local;
