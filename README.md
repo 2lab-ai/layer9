@@ -1,4 +1,4 @@
-# Layer9: The Web Framework From a Parallel Universe Where Abstractions Make Sense
+# Layer9: The Framework That Makes Next.js Look Like a Mistake
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
