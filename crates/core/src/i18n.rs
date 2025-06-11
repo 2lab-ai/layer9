@@ -6,6 +6,12 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
+// Type aliases to simplify complex types
+type TranslateFn = Box<dyn Fn(&str, Option<&HashMap<String, String>>) -> String>;
+type PluralFn = Box<dyn Fn(&str, i32, Option<&HashMap<String, String>>) -> String>;
+type SetLocaleFn = Box<dyn Fn(Locale)>;
+type SimpleTFn = Box<dyn Fn(&str) -> String>;
+
 /// Supported locales
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Locale {
@@ -104,6 +110,12 @@ pub struct TranslationCatalog {
     locales: HashMap<Locale, Messages>,
 }
 
+impl Default for TranslationCatalog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TranslationCatalog {
     pub fn new() -> Self {
         TranslationCatalog {
@@ -124,7 +136,7 @@ impl TranslationCatalog {
         for (locale, messages) in other.locales {
             self.locales
                 .entry(locale)
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .extend(messages);
         }
     }
@@ -260,7 +272,7 @@ impl I18nContext {
 }
 
 thread_local! {
-    static I18N: RefCell<Option<I18nContext>> = RefCell::new(None);
+    static I18N: RefCell<Option<I18nContext>> = const { RefCell::new(None) };
 }
 
 /// Initialize i18n
@@ -311,10 +323,10 @@ pub fn use_i18n() -> I18n {
 /// i18n hook result
 pub struct I18n {
     pub locale: Locale,
-    pub set_locale: Box<dyn Fn(Locale)>,
-    pub t: Box<dyn Fn(&str) -> String>,
-    pub translate: Box<dyn Fn(&str, Option<&HashMap<String, String>>) -> String>,
-    pub plural: Box<dyn Fn(&str, i32, Option<&HashMap<String, String>>) -> String>,
+    pub set_locale: SetLocaleFn,
+    pub t: SimpleTFn,
+    pub translate: TranslateFn,
+    pub plural: PluralFn,
 }
 
 /// Detect browser locale

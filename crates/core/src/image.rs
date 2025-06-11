@@ -409,7 +409,7 @@ impl Component for BackgroundImage {
             let loaded_clone = loaded.clone();
             use_effect(|| {
                 let observer = IntersectionObserver::new(
-                    &Closure::<dyn FnMut(Vec<IntersectionObserverEntry>)>::new(
+                    Closure::<dyn FnMut(Vec<IntersectionObserverEntry>)>::new(
                         move |entries: Vec<IntersectionObserverEntry>| {
                             for entry in entries {
                                 if entry.is_intersecting() {

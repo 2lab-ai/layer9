@@ -9,6 +9,12 @@ pub struct VDom {
     dom_root: Option<DomElement>,
 }
 
+impl Default for VDom {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VDom {
     pub fn new() -> Self {
         VDom {
@@ -22,7 +28,7 @@ impl VDom {
         let document = window.document().unwrap();
         let dom_root = document
             .get_element_by_id(root_id)
-            .expect(&format!("Element with id '{}' not found", root_id));
+            .unwrap_or_else(|| panic!("Element with id '{}' not found", root_id));
 
         self.dom_root = Some(dom_root);
     }

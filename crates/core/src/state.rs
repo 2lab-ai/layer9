@@ -5,6 +5,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+// Type alias to simplify complex types
+type ReducerFn<S, A> = Rc<dyn Fn(&S, A) -> S>;
+
 thread_local! {
     static STORE: RefCell<Store> = RefCell::new(Store::new());
 }
@@ -45,7 +48,7 @@ impl Store {
 
     fn subscribe<T: 'static>(&mut self, listener: Box<dyn Fn()>) -> SubscriptionId {
         let type_id = TypeId::of::<T>();
-        let listeners = self.listeners.entry(type_id).or_insert_with(Vec::new);
+        let listeners = self.listeners.entry(type_id).or_default();
         let id = listeners.len();
         listeners.push(listener);
 
@@ -195,7 +198,7 @@ pub fn use_selector<T: 'static + Clone, U: 'static + Clone>(
 /// Redux-style reducer store
 pub struct ReducerStore<S, A> {
     state: Atom<S>,
-    reducer: Rc<dyn Fn(&S, A) -> S>,
+    reducer: ReducerFn<S, A>,
 }
 
 impl<S: 'static + Clone + Default, A: 'static> ReducerStore<S, A> {

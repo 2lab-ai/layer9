@@ -93,6 +93,12 @@ pub struct QueryBuilder<M: Model> {
     _phantom: PhantomData<M>,
 }
 
+impl<M: Model> Default for QueryBuilder<M> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<M: Model> QueryBuilder<M> {
     pub fn new() -> Self {
         QueryBuilder {
@@ -479,7 +485,7 @@ impl DatabaseConnection for PostgresConnection {
         }
 
         let mut fetch_builder =
-            crate::fetch::FetchBuilder::new(&format!("{}/execute", self.api_url))
+            crate::fetch::FetchBuilder::new(format!("{}/execute", self.api_url))
                 .method(crate::fetch::Method::POST);
 
         for (key, value) in headers {
@@ -521,7 +527,7 @@ impl DatabaseConnection for PostgresConnection {
         }
 
         let mut fetch_builder =
-            crate::fetch::FetchBuilder::new(&format!("{}/query_one", self.api_url))
+            crate::fetch::FetchBuilder::new(format!("{}/query_one", self.api_url))
                 .method(crate::fetch::Method::POST);
 
         for (key, value) in headers {
@@ -563,7 +569,7 @@ impl DatabaseConnection for PostgresConnection {
         }
 
         let mut fetch_builder =
-            crate::fetch::FetchBuilder::new(&format!("{}/query_many", self.api_url))
+            crate::fetch::FetchBuilder::new(format!("{}/query_many", self.api_url))
                 .method(crate::fetch::Method::POST);
 
         for (key, value) in headers {

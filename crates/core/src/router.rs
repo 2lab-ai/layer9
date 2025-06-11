@@ -11,6 +11,12 @@ pub struct Page {
     pub component: Box<dyn Component>,
 }
 
+impl Default for Page {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Page {
     pub fn new() -> Self {
         Page {
@@ -53,6 +59,12 @@ pub enum RouteHandler {
 /// Router
 pub struct Router {
     routes: HashMap<String, Route>,
+}
+
+impl Default for Router {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Router {

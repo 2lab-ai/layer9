@@ -44,14 +44,12 @@ impl L4::Service for AuthService {
     type Request = AuthRequest;
     type Response = AuthResponse;
 
-    fn handle(&self, req: Self::Request) -> impl std::future::Future<Output = Self::Response> {
-        async move {
-            match req {
-                AuthRequest::Login(provider) => self.login(provider).await,
-                AuthRequest::Logout => self.logout().await,
-                AuthRequest::Refresh => self.refresh_token().await,
-                AuthRequest::GetUser => self.get_current_user(),
-            }
+    async fn handle(&self, req: Self::Request) -> Self::Response {
+        match req {
+            AuthRequest::Login(provider) => self.login(provider).await,
+            AuthRequest::Logout => self.logout().await,
+            AuthRequest::Refresh => self.refresh_token().await,
+            AuthRequest::GetUser => self.get_current_user(),
         }
     }
 }

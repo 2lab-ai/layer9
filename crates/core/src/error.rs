@@ -5,6 +5,10 @@ use std::cell::RefCell;
 use std::panic;
 use std::rc::Rc;
 
+// Type aliases to simplify complex types
+type ErrorHandler = Box<dyn Fn(&ErrorInfo)>;
+type FallbackRender = Box<dyn Fn(&ErrorInfo) -> Element>;
+
 /// Error boundary state
 #[derive(Clone)]
 pub struct ErrorBoundaryState {
@@ -22,8 +26,8 @@ pub struct ErrorInfo {
 /// Error boundary component
 pub struct ErrorBoundary {
     children: Box<dyn Component>,
-    fallback: Box<dyn Fn(&ErrorInfo) -> Element>,
-    on_error: Option<Box<dyn Fn(&ErrorInfo)>>,
+    fallback: FallbackRender,
+    on_error: Option<ErrorHandler>,
     state: Rc<RefCell<ErrorBoundaryState>>,
 }
 
@@ -101,8 +105,10 @@ impl Component for ErrorBoundary {
 fn default_error_fallback(error: &ErrorInfo) -> Element {
     use crate::component::{Element, Props};
 
-    let mut props = Props::default();
-    props.class = Some("error-boundary-fallback".to_string());
+    let props = Props {
+        class: Some("error-boundary-fallback".to_string()),
+        ..Default::default()
+    };
 
     Element::Node {
         tag: "div".to_string(),

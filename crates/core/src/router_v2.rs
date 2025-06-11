@@ -177,9 +177,8 @@ fn match_path(pattern: &str, path: &str) -> Option<HashMap<String, String>> {
     let mut params = HashMap::new();
 
     for (pattern_part, path_part) in pattern_parts.iter().zip(path_parts.iter()) {
-        if pattern_part.starts_with(':') {
+        if let Some(param_name) = pattern_part.strip_prefix(':') {
             // Dynamic segment
-            let param_name = &pattern_part[1..];
             params.insert(param_name.to_string(), path_part.to_string());
         } else if pattern_part != path_part {
             // Static segment doesn't match
@@ -194,8 +193,7 @@ fn match_path(pattern: &str, path: &str) -> Option<HashMap<String, String>> {
 fn parse_query(query: &str) -> HashMap<String, String> {
     let mut params = HashMap::new();
 
-    if query.starts_with('?') {
-        let query = &query[1..];
+    if let Some(query) = query.strip_prefix('?') {
         for pair in query.split('&') {
             if let Some((key, value)) = pair.split_once('=') {
                 params.insert(
@@ -210,7 +208,7 @@ fn parse_query(query: &str) -> HashMap<String, String> {
 }
 
 thread_local! {
-    static ROUTER: RefCell<Option<Rc<Router>>> = RefCell::new(None);
+    static ROUTER: RefCell<Option<Rc<Router>>> = const { RefCell::new(None) };
 }
 
 /// Initialize router

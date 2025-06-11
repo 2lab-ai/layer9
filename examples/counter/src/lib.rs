@@ -6,7 +6,7 @@ use web_sys::{Document, Element};
 
 // Thread-safe counter state
 thread_local! {
-    static COUNTER: RefCell<i32> = RefCell::new(0);
+    static COUNTER: RefCell<i32> = const { RefCell::new(0) };
 }
 
 #[wasm_bindgen(start)]

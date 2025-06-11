@@ -4,7 +4,14 @@ use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::rc::Rc;
+
+// Type aliases to simplify complex types
+type ValidationFn<T> = Box<dyn Fn(&T) -> HashMap<String, Vec<String>>>;
+type SubmitFn<T> = Box<dyn Fn(&T) -> Pin<Box<dyn Future<Output = Result<(), String>> + 'static>>>;
+type ValidatorFn = Box<dyn Fn(&str) -> Option<String>>;
 
 /// Form state
 #[derive(Clone)]
@@ -19,8 +26,8 @@ pub struct FormState<T> {
 /// Form configuration
 pub struct FormConfig<T> {
     pub initial_values: T,
-    pub validate: Option<Box<dyn Fn(&T) -> HashMap<String, Vec<String>>>>,
-    pub on_submit: Box<dyn Fn(&T) -> Pin<Box<dyn Future<Output = Result<(), String>>>>>,
+    pub validate: Option<ValidationFn<T>>,
+    pub on_submit: SubmitFn<T>,
 }
 
 /// Form hook
@@ -135,6 +142,7 @@ impl<T: Clone + 'static> Form<T> {
 
 /// Validation rules
 pub mod validators {
+    use super::ValidatorFn;
     
     pub fn required(value: &str) -> Option<String> {
         if value.trim().is_empty() {
@@ -185,7 +193,7 @@ pub mod validators {
     }
 
     pub fn compose(
-        validators: Vec<Box<dyn Fn(&str) -> Option<String>>>,
+        validators: Vec<ValidatorFn>,
     ) -> impl Fn(&str) -> Vec<String> {
         move |value: &str| {
             validators
@@ -352,7 +360,7 @@ impl<T: Clone + 'static> Component for FormComponent<T> {
             tag: "form".to_string(),
             props: Props {
                 attributes: vec![("onsubmit".to_string(), "event.preventDefault()".to_string())],
-                on_click: Some(Rc::new(move || on_submit())),
+                on_click: Some(Rc::new(on_submit)),
                 ..Default::default()
             },
             children: self.children.clone(),
@@ -362,6 +370,4 @@ impl<T: Clone + 'static> Component for FormComponent<T> {
 
 // Re-exports
 use crate::fetch::post;
-use std::future::Future;
-use std::pin::Pin;
 use wasm_bindgen_futures::spawn_local;

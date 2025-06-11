@@ -74,6 +74,12 @@ pub struct Card {
     class: Option<String>,
 }
 
+impl Default for Card {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Card {
     pub fn new() -> Self {
         Card {
@@ -122,6 +128,12 @@ pub struct Input {
     placeholder: Option<String>,
     value: String,
     on_change: Option<Rc<dyn Fn(String)>>,
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Input {
@@ -296,6 +308,12 @@ pub struct Avatar {
     fallback: String,
 }
 
+impl Default for Avatar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Avatar {
     pub fn new() -> Self {
         Avatar {
@@ -380,6 +398,12 @@ pub struct Tabs {
 pub struct Tab {
     label: String,
     content: Element,
+}
+
+impl Default for Tabs {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Tabs {

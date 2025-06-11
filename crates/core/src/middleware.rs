@@ -9,6 +9,9 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
+// Type alias to simplify complex types
+type VerifyTokenFn = Box<dyn Fn(&str) -> Option<User>>;
+
 /// Middleware context
 pub struct Context {
     pub request: Request,
@@ -33,6 +36,12 @@ pub struct Response {
     pub status: u16,
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
+}
+
+impl Default for Response {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Response {
@@ -101,6 +110,12 @@ pub struct MiddlewareStack {
     middlewares: Vec<Box<dyn Middleware>>,
 }
 
+impl Default for MiddlewareStack {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MiddlewareStack {
     pub fn new() -> Self {
         MiddlewareStack {
@@ -149,7 +164,7 @@ impl MiddlewareStack {
 /// Common middleware implementations
 /// Authentication middleware
 pub struct AuthMiddleware {
-    verify_token: Box<dyn Fn(&str) -> Option<User>>,
+    verify_token: VerifyTokenFn,
 }
 
 impl AuthMiddleware {
@@ -182,6 +197,12 @@ pub struct CorsMiddleware {
     allowed_origins: Vec<String>,
     allowed_methods: Vec<String>,
     allowed_headers: Vec<String>,
+}
+
+impl Default for CorsMiddleware {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CorsMiddleware {
@@ -267,29 +288,30 @@ impl Middleware for RateLimitMiddleware {
             .cloned()
             .unwrap_or_else(|| "anonymous".to_string());
 
-        let mut store = self.store.borrow_mut();
-        let entry = store.entry(client_id.clone()).or_insert(RateLimitEntry {
-            count: 0,
-            reset_at: now + self.window_ms,
-        });
-
-        // Reset if window expired
-        if now > entry.reset_at {
-            entry.count = 0;
-            entry.reset_at = now + self.window_ms;
-        }
-
-        // Check rate limit
-        if entry.count >= self.max_requests {
-            return Err(MiddlewareError {
-                status: 429,
-                message: "Too many requests".to_string(),
+        let current_count = {
+            let mut store = self.store.borrow_mut();
+            let entry = store.entry(client_id.clone()).or_insert(RateLimitEntry {
+                count: 0,
+                reset_at: now + self.window_ms,
             });
-        }
 
-        entry.count += 1;
-        let current_count = entry.count;
-        drop(store);
+            // Reset if window expired
+            if now > entry.reset_at {
+                entry.count = 0;
+                entry.reset_at = now + self.window_ms;
+            }
+
+            // Check rate limit
+            if entry.count >= self.max_requests {
+                return Err(MiddlewareError {
+                    status: 429,
+                    message: "Too many requests".to_string(),
+                });
+            }
+
+            entry.count += 1;
+            entry.count
+        };
 
         // Add rate limit headers
         let mut response = next().await?;

@@ -343,6 +343,12 @@ pub struct MultiLayerCache<T: Clone> {
     layers: Vec<Cache<T>>,
 }
 
+impl<T: Clone + 'static> Default for MultiLayerCache<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Clone + 'static> MultiLayerCache<T> {
     pub fn new() -> Self {
         MultiLayerCache { layers: vec![] }
@@ -397,6 +403,12 @@ pub struct CachedResponse {
     pub data: String,
     pub headers: Vec<(String, String)>,
     pub status: u16,
+}
+
+impl Default for HttpCache {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HttpCache {

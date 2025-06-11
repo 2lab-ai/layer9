@@ -254,7 +254,7 @@ impl OpenApiBuilder {
     }
 
     pub fn security_scheme(mut self, name: impl Into<String>, scheme: SecurityScheme) -> Self {
-        let components = self.spec.components.get_or_insert_with(|| Components {
+        let components = self.spec.components.get_or_insert(Components {
             schemas: None,
             responses: None,
             parameters: None,
@@ -274,6 +274,12 @@ impl OpenApiBuilder {
 /// Route documentation decorator
 pub struct ApiDoc {
     operation: Operation,
+}
+
+impl Default for ApiDoc {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ApiDoc {

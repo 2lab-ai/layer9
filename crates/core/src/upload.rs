@@ -130,8 +130,9 @@ impl FileUploader {
 
             let files_count = state.borrow().files.len();
             let mut uploaded_files = vec![];
+            let files_clone = state.borrow().files.clone();
 
-            for (index, _file_info) in state.borrow().files.clone().iter().enumerate() {
+            for (index, _file_info) in files_clone.iter().enumerate() {
                 // Create form data
                 let form_data = FormData::new().unwrap();
 

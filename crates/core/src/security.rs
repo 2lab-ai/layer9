@@ -46,7 +46,7 @@ impl CsrfProtection {
         hasher.update(payload.as_bytes());
         let hash = hasher.finalize();
 
-        let token_value = general_purpose::STANDARD.encode(&hash);
+        let token_value = general_purpose::STANDARD.encode(hash);
 
         // Store token
         let token = CsrfToken {
@@ -105,6 +105,12 @@ impl CsrfProtection {
 /// Content Security Policy builder
 pub struct ContentSecurityPolicy {
     directives: HashMap<String, Vec<String>>,
+}
+
+impl Default for ContentSecurityPolicy {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ContentSecurityPolicy {
@@ -432,7 +438,7 @@ impl SubresourceIntegrity {
         hasher.update(content.as_bytes());
         let hash = hasher.finalize();
 
-        format!("sha256-{}", general_purpose::STANDARD.encode(&hash))
+        format!("sha256-{}", general_purpose::STANDARD.encode(hash))
     }
 
     pub fn verify(content: &str, integrity: &str) -> bool {

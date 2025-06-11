@@ -488,7 +488,7 @@ fn generate_session_id() -> String {
 }
 
 thread_local! {
-    static MONITORING: RefCell<Option<MonitoringSystem>> = RefCell::new(None);
+    static MONITORING: RefCell<Option<MonitoringSystem>> = const { RefCell::new(None) };
 }
 
 pub struct MonitoringSystem {

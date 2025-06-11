@@ -140,7 +140,7 @@ impl Config {
 }
 
 /// Global config instance
-static CONFIG: Lazy<Result<Config, String>> = Lazy::new(|| Config::from_env());
+static CONFIG: Lazy<Result<Config, String>> = Lazy::new(Config::from_env);
 
 /// Get global config
 pub fn config() -> Result<&'static Config, &'static String> {

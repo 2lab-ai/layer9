@@ -11,9 +11,18 @@ use wasm_bindgen::JsCast;
 #[cfg(test)]
 use wasm_bindgen_test::*;
 
+// Type alias to simplify complex types
+type PropsModifierFn<T> = Box<dyn Fn(&mut T)>;
+
 /// Test context for components
 pub struct TestContext {
     container: web_sys::Element,
+}
+
+impl Default for TestContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TestContext {
@@ -212,7 +221,7 @@ macro_rules! assert_has_class {
 /// Component test harness
 pub struct ComponentTest<T: Component> {
     component: T,
-    props_modifier: Option<Box<dyn Fn(&mut T)>>,
+    props_modifier: Option<PropsModifierFn<T>>,
 }
 
 impl<T: Component> ComponentTest<T> {
