@@ -13,7 +13,7 @@ members = [
     "crates/runtime",
     "crates/cli",
     "examples/counter",
-    "examples/github-dashboard",
+    "examples/github-dashboard", "crates/layer9-server",
 ]
 
 [dependencies]

@@ -3,10 +3,12 @@
  * Layer9 Development Server with Automatic Port Management
  * 
  * Features:
+ * - Pure Rust server (no Python!)
  * - Automatic port conflict resolution
  * - Process cleanup on exit
  * - Live reload capability
  * - Health monitoring
+ * - WASM MIME type support
  */
 
 const { spawn, exec } = require('child_process');
@@ -142,13 +144,21 @@ class Layer9DevServer {
 
     async startServer() {
         this.port = await this.findAvailablePort();
-        this.log('info', `Starting server on port ${this.port}...`);
+        this.log('info', `Starting Rust server on port ${this.port}...`);
 
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
             
-            this.serverProcess = spawn('python3', ['-m', 'http.server', this.port.toString()], {
-                cwd: path.join(process.cwd(), 'examples', 'counter'),
+            this.serverProcess = spawn('cargo', [
+                'run',
+                '--manifest-path',
+                path.join(process.cwd(), 'crates', 'layer9-server', 'Cargo.toml'),
+                '--',
+                '--dir',
+                path.join(process.cwd(), 'examples', 'counter'),
+                '--port',
+                this.port.toString()
+            ], {
                 stdio: 'pipe'
             });
 

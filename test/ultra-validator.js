@@ -183,17 +183,36 @@ class UltraValidator {
             this.serverProcess = null;
         }
         
-        // Try multiple server options
+        // Try multiple server options (Rust first!)
         const serverOptions = [
-            { cmd: 'python3', args: ['-m', 'http.server', '8080'] },
-            { cmd: 'python', args: ['-m', 'SimpleHTTPServer', '8080'] },
-            { cmd: 'npx', args: ['http-server', '-p', '8080'] }
+            { 
+                cmd: 'cargo', 
+                args: [
+                    'run',
+                    '--manifest-path',
+                    path.join(process.cwd(), 'crates', 'layer9-server', 'Cargo.toml'),
+                    '--',
+                    '--dir',
+                    path.join(process.cwd(), 'examples', 'counter'),
+                    '--port',
+                    '8080'
+                ],
+                name: 'Layer9 Rust Server'
+            },
+            { cmd: 'python3', args: ['-m', 'http.server', '8080'], name: 'python3' },
+            { cmd: 'python', args: ['-m', 'SimpleHTTPServer', '8080'], name: 'python' },
+            { cmd: 'npx', args: ['http-server', '-p', '8080'], name: 'npx' }
         ];
         
         for (const option of serverOptions) {
             try {
+                // Use root directory for Rust server, examples/counter for others
+                const cwd = option.name === 'Layer9 Rust Server' 
+                    ? process.cwd() 
+                    : path.join(process.cwd(), 'examples', 'counter');
+                    
                 this.serverProcess = spawn(option.cmd, option.args, {
-                    cwd: path.join(process.cwd(), 'examples', 'counter'),
+                    cwd: cwd,
                     stdio: 'pipe'
                 });
                 
@@ -202,7 +221,7 @@ class UltraValidator {
                 
                 const response = await fetch('http://localhost:8080').catch(() => null);
                 if (response && response.ok) {
-                    this.log(`Server started with ${option.cmd}`, 'success');
+                    this.log(`Server started with ${option.name || option.cmd}`, 'success');
                     this.metrics.serverStarts++;
                     return;
                 }
