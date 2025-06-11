@@ -293,6 +293,7 @@ pub struct ThemeTypography {
     pub font_size_base: &'static str,
 }
 
+#[allow(dead_code)]
 static DEFAULT_THEME: Lazy<Theme> = Lazy::new(|| Theme {
     colors: ThemeColors {
         primary: "#667eea",

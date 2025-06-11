@@ -52,7 +52,7 @@ pub struct Router {
     config: Rc<RouterConfig>,
     state: Atom<RouteState>,
     history: History,
-    location: Location,
+    _location: Location,
 }
 
 impl Router {
@@ -75,7 +75,7 @@ impl Router {
             config: Rc::new(config),
             state,
             history,
-            location,
+            _location: location,
         };
 
         // Setup popstate listener

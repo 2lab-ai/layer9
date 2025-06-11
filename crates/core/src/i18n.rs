@@ -344,6 +344,7 @@ fn detect_browser_locale() -> Option<Locale> {
 }
 
 /// Number formatting
+#[allow(dead_code)]
 pub struct NumberFormat {
     locale: Locale,
 }
@@ -376,6 +377,7 @@ impl NumberFormat {
 }
 
 /// Date/time formatting
+#[allow(dead_code)]
 pub struct DateTimeFormat {
     locale: Locale,
 }

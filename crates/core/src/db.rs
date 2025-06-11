@@ -47,7 +47,7 @@ pub enum DbErrorKind {
 /// Transaction handle
 pub struct Transaction {
     conn: Box<dyn DatabaseConnection>,
-    id: String,
+    _id: String,
 }
 
 impl Transaction {
@@ -419,14 +419,14 @@ impl<C: DatabaseConnection> Migrator<C> {
 /// Connection pool
 pub struct ConnectionPool<C: DatabaseConnection> {
     connections: Vec<C>,
-    max_size: usize,
+    _max_size: usize,
 }
 
 impl<C: DatabaseConnection> ConnectionPool<C> {
     pub fn new(max_size: usize) -> Self {
         ConnectionPool {
             connections: vec![],
-            max_size,
+            _max_size: max_size,
         }
     }
 

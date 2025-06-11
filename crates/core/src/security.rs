@@ -16,8 +16,8 @@ pub struct CsrfProtection {
 
 #[derive(Clone)]
 struct CsrfToken {
-    value: String,
-    created_at: f64,
+    _value: String,
+    _created_at: f64,
     expires_at: f64,
 }
 
@@ -50,8 +50,8 @@ impl CsrfProtection {
 
         // Store token
         let token = CsrfToken {
-            value: token_value.clone(),
-            created_at: timestamp,
+            _value: token_value.clone(),
+            _created_at: timestamp,
             expires_at: timestamp + 3600000.0, // 1 hour
         };
 
@@ -497,14 +497,14 @@ impl SecurityHeaders {
 /// Security context for components
 pub struct SecurityContext {
     csrf: CsrfProtection,
-    csp: ContentSecurityPolicy,
+    _csp: ContentSecurityPolicy,
 }
 
 impl SecurityContext {
     pub fn new(secret: impl Into<String>) -> Self {
         SecurityContext {
             csrf: CsrfProtection::new(secret),
-            csp: ContentSecurityPolicy::new()
+            _csp: ContentSecurityPolicy::new()
                 .default_src(vec!["'self'"])
                 .script_src(vec!["'self'", "'unsafe-inline'"])
                 .style_src(vec!["'self'", "'unsafe-inline'"]),

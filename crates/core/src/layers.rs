@@ -33,6 +33,7 @@ impl<const FROM: u8, const TO: u8> LayerGuard<FROM, TO> {
 }
 
 /// L9: Philosophy - The highest abstraction
+#[allow(non_snake_case)]
 pub mod L9 {
     use super::*;
 
@@ -48,6 +49,7 @@ pub mod L9 {
 }
 
 /// L8: Architecture - System design
+#[allow(non_snake_case)]
 pub mod L8 {
     use super::*;
 
@@ -66,6 +68,7 @@ pub mod L8 {
 }
 
 /// L7: Application - Business logic
+#[allow(non_snake_case)]
 pub mod L7 {
     use super::*;
 
@@ -80,6 +83,7 @@ pub mod L7 {
 }
 
 /// L6: Features - Feature modules  
+#[allow(non_snake_case)]
 pub mod L6 {
     use super::*;
 
@@ -94,6 +98,7 @@ pub mod L6 {
 }
 
 /// L5: Components - UI components
+#[allow(non_snake_case)]
 pub mod L5 {
     use super::*;
     use crate::component::Component;
@@ -104,6 +109,7 @@ pub mod L5 {
 }
 
 /// L4: Services - Server/Client services
+#[allow(non_snake_case)]
 pub mod L4 {
     use super::*;
 
@@ -118,6 +124,7 @@ pub mod L4 {
 }
 
 /// L3: Runtime - Execution environment
+#[allow(non_snake_case)]
 pub mod L3 {
     use super::*;
 
@@ -134,6 +141,7 @@ pub mod L3 {
 }
 
 /// L2: Platform - Next.js compatibility
+#[allow(non_snake_case)]
 pub mod L2 {
     use super::*;
 
@@ -146,6 +154,7 @@ pub mod L2 {
 }
 
 /// L1: Infrastructure - Build and deploy
+#[allow(non_snake_case)]
 pub mod L1 {
     use super::*;
 

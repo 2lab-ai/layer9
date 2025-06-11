@@ -149,7 +149,7 @@ impl Component for Image {
     fn render(&self) -> Element {
         let is_lazy = matches!(self.loading, ImageLoading::Lazy);
         let loaded = use_state(|| !is_lazy);
-        let error = use_state(|| false);
+        let _error = use_state(|| false);
 
         // Image attributes
         let mut attrs = vec![("alt".to_string(), self.alt.clone())];
@@ -260,7 +260,7 @@ impl Component for Image {
             }
         };
 
-        let on_load = self.on_load.clone();
+        let _on_load = self.on_load.clone();
         let _on_error = self.on_error.clone();
 
         let img_props = Props {

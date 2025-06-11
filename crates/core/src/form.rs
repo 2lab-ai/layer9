@@ -201,7 +201,7 @@ pub struct TextField {
     name: String,
     label: String,
     placeholder: Option<String>,
-    form: Rc<RefCell<dyn FormField>>,
+    _form: Rc<RefCell<dyn FormField>>,
 }
 
 impl TextField {
@@ -210,7 +210,7 @@ impl TextField {
             name: name.into(),
             label: label.into(),
             placeholder: None,
-            form: Rc::new(RefCell::new(EmptyFormField)),
+            _form: Rc::new(RefCell::new(EmptyFormField)),
         }
     }
 
@@ -273,6 +273,7 @@ impl Component for TextField {
 }
 
 /// Form field trait
+#[allow(dead_code)]
 trait FormField {
     fn get_value(&self) -> String;
     fn set_value(&mut self, value: String);
