@@ -273,32 +273,39 @@ pub fn init_i18n(catalog: TranslationCatalog) {
 
 /// i18n hook
 pub fn use_i18n() -> I18n {
-    I18N.with(|i18n| {
-        let ctx = i18n.borrow();
-        if let Some(ctx) = ctx.as_ref() {
-            I18n {
-                locale: ctx.locale(),
-                set_locale: {
-                    let ctx = ctx.clone();
-                    Box::new(move |locale| ctx.set_locale(locale))
-                },
-                t: {
-                    let ctx = ctx.clone();
-                    Box::new(move |key| ctx.t(key))
-                },
-                translate: {
-                    let ctx = ctx.clone();
-                    Box::new(move |key, args| ctx.translate(key, args))
-                },
-                plural: {
-                    let ctx = ctx.clone();
-                    Box::new(move |key, count, args| ctx.plural(key, count, args))
-                },
-            }
-        } else {
+    // First check if initialized
+    let locale = I18N.with(|i18n| {
+        let borrowed = i18n.borrow();
+        borrowed.as_ref().map(|ctx| ctx.locale()).unwrap_or_else(|| {
             panic!("i18n not initialized. Call init_i18n() first.");
-        }
-    })
+        })
+    });
+    
+    I18n {
+        locale,
+        set_locale: Box::new(move |locale| {
+            I18N.with(|i18n| {
+                if let Some(ctx) = i18n.borrow().as_ref() {
+                    ctx.set_locale(locale);
+                }
+            });
+        }),
+        t: Box::new(move |key| {
+            I18N.with(|i18n| {
+                i18n.borrow().as_ref().map(|ctx| ctx.t(key)).unwrap_or_else(|| key.to_string())
+            })
+        }),
+        translate: Box::new(move |key, args| {
+            I18N.with(|i18n| {
+                i18n.borrow().as_ref().map(|ctx| ctx.translate(key, args)).unwrap_or_else(|| key.to_string())
+            })
+        }),
+        plural: Box::new(move |key, count, args| {
+            I18N.with(|i18n| {
+                i18n.borrow().as_ref().map(|ctx| ctx.plural(key, count, args)).unwrap_or_else(|| key.to_string())
+            })
+        }),
+    }
 }
 
 /// i18n hook result

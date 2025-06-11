@@ -25,8 +25,9 @@ pub struct FormConfig<T> {
 
 /// Form hook
 pub fn use_form<T: Clone + Default + 'static>(config: FormConfig<T>) -> Form<T> {
+    let initial_values = config.initial_values.clone();
     let state = Rc::new(RefCell::new(FormState {
-        values: config.initial_values,
+        values: initial_values,
         errors: HashMap::new(),
         touched: HashMap::new(),
         submitting: false,

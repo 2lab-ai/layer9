@@ -8,7 +8,7 @@ use std::collections::HashMap;
 /// Style class builder - Tailwind-like utility classes in Rust
 #[derive(Default)]
 pub struct StyleBuilder {
-    classes: Vec<&'static str>,
+    classes: Vec<String>,
     custom: HashMap<String, String>,
 }
 
@@ -19,33 +19,33 @@ impl StyleBuilder {
 
     // Layout
     pub fn flex(mut self) -> Self {
-        self.classes.push("display: flex");
+        self.classes.push("display: flex".to_string());
         self
     }
 
     pub fn grid(mut self) -> Self {
-        self.classes.push("display: grid");
+        self.classes.push("display: grid".to_string());
         self
     }
 
     pub fn hidden(mut self) -> Self {
-        self.classes.push("display: none");
+        self.classes.push("display: none".to_string());
         self
     }
 
     // Flexbox
     pub fn items_center(mut self) -> Self {
-        self.classes.push("align-items: center");
+        self.classes.push("align-items: center".to_string());
         self
     }
 
     pub fn justify_center(mut self) -> Self {
-        self.classes.push("justify-content: center");
+        self.classes.push("justify-content: center".to_string());
         self
     }
 
     pub fn justify_between(mut self) -> Self {
-        self.classes.push("justify-content: space-between");
+        self.classes.push("justify-content: space-between".to_string());
         self
     }
 
@@ -102,117 +102,117 @@ impl StyleBuilder {
 
     // Typography
     pub fn text_sm(mut self) -> Self {
-        self.classes.push("font-size: 0.875rem");
-        self.classes.push("line-height: 1.25rem");
+        self.classes.push("font-size: 0.875rem".to_string());
+        self.classes.push("line-height: 1.25rem".to_string());
         self
     }
 
     pub fn text_lg(mut self) -> Self {
-        self.classes.push("font-size: 1.125rem");
-        self.classes.push("line-height: 1.75rem");
+        self.classes.push("font-size: 1.125rem".to_string());
+        self.classes.push("line-height: 1.75rem".to_string());
         self
     }
 
     pub fn text_xl(mut self) -> Self {
-        self.classes.push("font-size: 1.25rem");
-        self.classes.push("line-height: 1.75rem");
+        self.classes.push("font-size: 1.25rem".to_string());
+        self.classes.push("line-height: 1.75rem".to_string());
         self
     }
 
     pub fn font_bold(mut self) -> Self {
-        self.classes.push("font-weight: 700");
+        self.classes.push("font-weight: 700".to_string());
         self
     }
 
     pub fn text_center(mut self) -> Self {
-        self.classes.push("text-align: center");
+        self.classes.push("text-align: center".to_string());
         self
     }
 
     // Colors
     pub fn bg_black(mut self) -> Self {
-        self.classes.push("background-color: #000000");
+        self.classes.push("background-color: #000000".to_string());
         self
     }
 
     pub fn bg_white(mut self) -> Self {
-        self.classes.push("background-color: #ffffff");
+        self.classes.push("background-color: #ffffff".to_string());
         self
     }
 
     pub fn text_white(mut self) -> Self {
-        self.classes.push("color: #ffffff");
+        self.classes.push("color: #ffffff".to_string());
         self
     }
 
     pub fn text_gray_500(mut self) -> Self {
-        self.classes.push("color: #6b7280");
+        self.classes.push("color: #6b7280".to_string());
         self
     }
 
     // Borders
     pub fn border(mut self) -> Self {
-        self.classes.push("border-width: 1px");
-        self.classes.push("border-style: solid");
+        self.classes.push("border-width: 1px".to_string());
+        self.classes.push("border-style: solid".to_string());
         self
     }
 
     pub fn border_gray_200(mut self) -> Self {
-        self.classes.push("border-color: #e5e7eb");
+        self.classes.push("border-color: #e5e7eb".to_string());
         self
     }
 
     pub fn rounded(mut self) -> Self {
-        self.classes.push("border-radius: 0.25rem");
+        self.classes.push("border-radius: 0.25rem".to_string());
         self
     }
 
     pub fn rounded_lg(mut self) -> Self {
-        self.classes.push("border-radius: 0.5rem");
+        self.classes.push("border-radius: 0.5rem".to_string());
         self
     }
 
     // Effects
     pub fn shadow(mut self) -> Self {
         self.classes
-            .push("box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)");
+            .push("box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1)".to_string());
         self
     }
 
     pub fn transition(mut self) -> Self {
-        self.classes.push("transition-property: all");
-        self.classes.push("transition-duration: 150ms");
+        self.classes.push("transition-property: all".to_string());
+        self.classes.push("transition-duration: 150ms".to_string());
         self
     }
 
     pub fn hover_bg_gray_100(mut self) -> Self {
         // Note: Hover states need special handling in WASM
-        self.classes.push("hover:background-color: #f3f4f6");
+        self.classes.push("hover:background-color: #f3f4f6".to_string());
         self
     }
 
     // Dark mode
     pub fn dark_bg_gray_800(mut self) -> Self {
         self.classes
-            .push("@media (prefers-color-scheme: dark) { background-color: #1f2937 }");
+            .push("@media (prefers-color-scheme: dark) { background-color: #1f2937 }".to_string());
         self
     }
 
     pub fn dark_text_gray_100(mut self) -> Self {
         self.classes
-            .push("@media (prefers-color-scheme: dark) { color: #f3f4f6 }");
+            .push("@media (prefers-color-scheme: dark) { color: #f3f4f6 }".to_string());
         self
     }
 
     // Responsive
     pub fn md_flex(mut self) -> Self {
         self.classes
-            .push("@media (min-width: 768px) { display: flex }");
+            .push("@media (min-width: 768px) { display: flex }".to_string());
         self
     }
 
     pub fn lg_grid_cols(mut self, cols: u8) -> Self {
-        self.classes.push(&format!(
+        self.classes.push(format!(
             "@media (min-width: 1024px) {{ grid-template-columns: repeat({}, minmax(0, 1fr)) }}",
             cols
         ));

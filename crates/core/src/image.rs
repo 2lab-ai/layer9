@@ -261,9 +261,9 @@ impl Component for Image {
         };
 
         let on_load = self.on_load.clone();
-        let on_error = self.on_error.clone();
+        let _on_error = self.on_error.clone();
 
-        let mut img_props = Props {
+        let img_props = Props {
             class: Some(if loaded.get() { "loaded" } else { "loading" }.to_string()),
             attributes: attrs,
             ..Default::default()
@@ -406,13 +406,14 @@ impl Component for BackgroundImage {
 
         // Set up intersection observer for lazy loading
         if matches!(self.loading, ImageLoading::Lazy) {
+            let loaded_clone = loaded.clone();
             use_effect(|| {
                 let observer = IntersectionObserver::new(
                     &Closure::<dyn FnMut(Vec<IntersectionObserverEntry>)>::new(
                         move |entries: Vec<IntersectionObserverEntry>| {
                             for entry in entries {
                                 if entry.is_intersecting() {
-                                    loaded.set(true);
+                                    loaded_clone.set(true);
                                     // Disconnect observer
                                 }
                             }

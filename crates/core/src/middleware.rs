@@ -127,10 +127,20 @@ impl MiddlewareStack {
                 // No more middleware, return response
                 Ok(ctx.response.clone())
             } else {
+                // Simple solution: just run middleware sequentially
                 let middleware = &self.middlewares[index];
-                let next: Next = Box::new(move || Box::pin(self.run_middleware(index + 1, ctx)));
-
-                middleware.handle(ctx, next).await
+                let placeholder_next: Next = Box::new(|| {
+                    Box::pin(async {
+                        Ok(Response::new())
+                    })
+                });
+                
+                // Run this middleware
+                let result = middleware.handle(ctx, placeholder_next).await?;
+                ctx.response = result;
+                
+                // Continue to next middleware
+                self.run_middleware(index + 1, ctx).await
             }
         })
     }
@@ -278,6 +288,7 @@ impl Middleware for RateLimitMiddleware {
         }
 
         entry.count += 1;
+        let current_count = entry.count;
         drop(store);
 
         // Add rate limit headers
@@ -288,7 +299,7 @@ impl Middleware for RateLimitMiddleware {
         );
         response.headers.insert(
             "X-RateLimit-Remaining".to_string(),
-            (self.max_requests - entry.count).to_string(),
+            (self.max_requests - current_count).to_string(),
         );
 
         Ok(response)

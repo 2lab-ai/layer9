@@ -55,7 +55,7 @@ impl Store {
     fn unsubscribe(&mut self, sub_id: SubscriptionId) {
         if let Some(listeners) = self.listeners.get_mut(&sub_id.type_id) {
             if sub_id.id < listeners.len() {
-                listeners.remove(sub_id.id);
+                let _ = listeners.remove(sub_id.id);
             }
         }
     }
@@ -135,7 +135,7 @@ pub struct AtomHandle<T> {
     atom: Atom<T>,
 }
 
-impl<T: Clone> AtomHandle<T> {
+impl<T: Clone + 'static> AtomHandle<T> {
     pub fn get(&self) -> Option<&T> {
         self.value.as_ref()
     }
@@ -219,7 +219,7 @@ impl<S: 'static + Clone + Default, A: 'static> ReducerStore<S, A> {
 }
 
 /// Use reducer hook
-pub fn use_reducer<S: 'static + Clone, A: 'static>(
+pub fn use_reducer<S: 'static + Clone + Default, A: 'static>(
     store: &ReducerStore<S, A>,
 ) -> (Option<S>, impl Fn(A)) {
     let state = use_atom(&store.state);
@@ -269,7 +269,7 @@ impl<S, A> Clone for ReducerStore<S, A> {
 }
 
 // Example usage:
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AppState {
     pub user: Option<User>,
     pub theme: Theme,
@@ -282,8 +282,9 @@ pub struct User {
     pub name: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum Theme {
+    #[default]
     Light,
     Dark,
 }

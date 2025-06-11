@@ -7,7 +7,7 @@ pub use layer9_macro::*;
 
 pub mod prelude {
     pub use layer9_core::{
-        app::*, component::*, layers::*, router::*, server::*, ssr::*, state::*, ui::*, vdom::*,
+        app::*, component::*, layers::*, router::*, server::*, state::*, ui::*, vdom::*,
     };
 
     pub use layer9_macro::*;

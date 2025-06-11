@@ -371,12 +371,15 @@ impl SecureCookie {
             SameSite::None => cookie_string.push_str("; SameSite=None"),
         }
 
-        document.set_property("cookie", &cookie_string.into()).ok();
+        js_sys::Reflect::set(&document, &"cookie".into(), &cookie_string.into()).ok();
     }
 
     pub fn get(name: &str) -> Option<String> {
         let document = web_sys::window().unwrap().document().unwrap();
-        let cookies = document.get_property("cookie").ok().and_then(|v| v.as_string()).unwrap_or_default();
+        let cookies = js_sys::Reflect::get(&document, &"cookie".into())
+            .ok()
+            .and_then(|v| v.as_string())
+            .unwrap_or_default();
 
         for cookie in cookies.split(';') {
             let cookie = cookie.trim();

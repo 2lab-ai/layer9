@@ -303,6 +303,7 @@ impl Component for FileUploadComponent {
                     .iter()
                     .enumerate()
                     .map(|(index, file)| {
+                        let uploader_clone = uploader.clone();
                         let preview_element = if let Some(preview) = &file.preview_url {
                             Element::Node {
                                 tag: "img".to_string(),
@@ -395,7 +396,7 @@ impl Component for FileUploadComponent {
                                     tag: "button".to_string(),
                                     props: Props {
                                         on_click: Some(Rc::new(move || {
-                                            uploader.remove_file(index)
+                                            uploader_clone.remove_file(index)
                                         })),
                                         ..Default::default()
                                     },
