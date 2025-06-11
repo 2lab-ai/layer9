@@ -1,26 +1,26 @@
-# WARP + Next.js Integration
+# Layer9 + Next.js Integration
 
-This example shows how to use WARP components within an existing Next.js application.
+This example shows how to use Layer9 components within an existing Next.js application.
 
 ## How it works
 
-1. WARP components compile to WASM
+1. Layer9 components compile to WASM
 2. Next.js loads WASM modules dynamically
-3. WARP handles its own routing within designated areas
+3. Layer9 handles its own routing within designated areas
 4. Server functions integrate with Next.js API routes
 
 ## Setup
 
 ```bash
 # In your Next.js project
-npm install @warp/nextjs
+npm install @layer9/nextjs
 
 # In next.config.js
 module.exports = {
   experimental: {
-    warp: {
-      // WARP components directory
-      components: './warp-components',
+    layer9: {
+      // Layer9 components directory
+      components: './layer9-components',
       // Auto-generate API routes
       serverFunctions: true,
     }
@@ -32,13 +32,13 @@ module.exports = {
 
 ```typescript
 // app/page.tsx
-import { WarpComponent } from '@warp/nextjs';
+import { Layer9Component } from '@layer9/nextjs';
 
 export default function Home() {
   return (
     <div>
       <h1>Next.js Page</h1>
-      <WarpComponent 
+      <Layer9Component 
         module="counter" 
         props={{ initial: 0 }}
       />
@@ -49,11 +49,11 @@ export default function Home() {
 
 ## Server Functions
 
-WARP server functions automatically become Next.js API routes:
+Layer9 server functions automatically become Next.js API routes:
 
 ```rust
 // counter.rs
-#[warp::server]
+#[layer9::server]
 async fn get_count() -> i32 {
     42
 }
@@ -62,7 +62,7 @@ async fn get_count() -> i32 {
 Becomes:
 
 ```
-/api/warp/get_count
+/api/layer9/get_count
 ```
 
 ## Benefits

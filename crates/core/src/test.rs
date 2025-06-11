@@ -164,7 +164,7 @@ impl TestUtils {
 
 /// Test macros
 #[macro_export]
-macro_rules! warp_test {
+macro_rules! layer9_test {
     ($name:ident, $body:expr) => {
         #[wasm_bindgen_test]
         async fn $name() {
@@ -286,7 +286,7 @@ impl PerfTest {
 mod tests {
     use super::*;
     
-    warp_test!(test_button_click, |ctx: &TestContext| {
+    layer9_test!(test_button_click, |ctx: &TestContext| {
         // Create a counter component
         struct Counter;
         impl Component for Counter {
@@ -324,7 +324,7 @@ mod tests {
         assert_text_content!(count_el, "1");
     });
     
-    warp_test!(test_form_submission, |ctx: &TestContext| async {
+    layer9_test!(test_form_submission, |ctx: &TestContext| async {
         // Test form component
         struct LoginForm;
         impl Component for LoginForm {

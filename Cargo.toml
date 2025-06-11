@@ -1,5 +1,5 @@
 [package]
-name = "warp-framework"
+name = "layer9-framework"
 version = "0.1.0"
 edition = "2021"
 authors = ["2lab.ai"]
@@ -15,9 +15,9 @@ members = [
 ]
 
 [dependencies]
-warp-core = { path = "crates/core" }
-warp-macro = { path = "crates/macro" }
-warp-runtime = { path = "crates/runtime" }
+layer9-core = { path = "crates/core" }
+layer9-macro = { path = "crates/macro" }
+layer9-runtime = { path = "crates/runtime" }
 
 # Web essentials
 wasm-bindgen = "0.2"

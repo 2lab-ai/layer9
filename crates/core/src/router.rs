@@ -96,8 +96,8 @@ impl Router {
             .unwrap()
             .document()
             .unwrap()
-            .get_element_by_id("warp-root")
-            .expect("No #warp-root element found");
+            .get_element_by_id("layer9-root")
+            .expect("No #layer9-root element found");
         
         // Clear existing content
         root.set_inner_html("");

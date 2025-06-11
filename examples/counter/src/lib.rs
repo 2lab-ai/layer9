@@ -1,6 +1,6 @@
-//! Counter Example - Demonstrates WARP's hierarchical architecture
+//! Counter Example - Demonstrates Layer9's hierarchical architecture
 
-use warp_framework::prelude::*;
+use layer9_framework::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
@@ -100,7 +100,7 @@ impl Component for Counter {
         
         view! {
             <div class="counter-container">
-                <h1>"WARP Counter Example"</h1>
+                <h1>"Layer9 Counter Example"</h1>
                 <p>"Count: " {count.to_string()}</p>
                 <div class="buttons">
                     <button id="increment">"+"</button>
@@ -108,7 +108,7 @@ impl Component for Counter {
                     <button id="reset">"Reset"</button>
                 </div>
                 <div class="philosophy">
-                    <p>"This simple counter demonstrates WARP's hierarchical architecture"</p>
+                    <p>"This simple counter demonstrates Layer9's hierarchical architecture"</p>
                     <p>"From L9 (Philosophy) to L1 (Infrastructure), every layer has its purpose"</p>
                 </div>
             </div>
@@ -138,14 +138,14 @@ struct CounterStats {
 #[wasm_bindgen]
 pub struct App;
 
-impl WarpApp for App {
+impl Layer9App for App {
     fn routes(&self) -> Vec<Route> {
         vec![
             Route {
                 path: "/".to_string(),
                 handler: RouteHandler::Page(|| {
                     Page::new()
-                        .title("WARP Counter")
+                        .title("Layer9 Counter")
                         .component(Counter::new())
                 }),
             },
@@ -153,7 +153,7 @@ impl WarpApp for App {
     }
     
     fn initialize(&self) {
-        console::log_1(&"WARP Counter App initialized!".into());
+        console::log_1(&"Layer9 Counter App initialized!".into());
         console::log_1(&"Hierarchical layers active:".into());
         console::log_1(&"L9: Philosophy - Why we count".into());
         console::log_1(&"L8: Architecture - How we structure counting".into());

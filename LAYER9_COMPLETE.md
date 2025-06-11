@@ -1,8 +1,8 @@
-# WARP - Production Ready Web Framework
+# Layer9 - Production Ready Web Framework
 
 ## 🚀 What's New
 
-WARP is now **production ready** with all the features needed to build real web applications:
+Layer9 is now **production ready** with all the features needed to build real web applications:
 
 ### ✅ Complete Feature Set
 
@@ -21,16 +21,16 @@ cargo run --bin server
 #### 2. **Development Server with Hot Reload**
 ```bash
 # Install CLI
-cargo install warp-cli
+cargo install layer9-cli
 
 # Create new project
-warp new my-app
+layer9 new my-app
 
 # Start dev server with hot reload
-warp dev
+layer9 dev
 
 # Build for production
-warp build --ssg
+layer9 build --ssg
 ```
 
 #### 3. **Real HTTP Fetch API**
@@ -180,38 +180,38 @@ my-app/
 │   ├── services/       # L4: API services
 │   └── state/          # L6: Global state
 ├── static/             # Static assets
-├── warp.toml          # Configuration
+├── layer9.toml          # Configuration
 └── Cargo.toml
 ```
 
 ## 🚀 Getting Started
 
-### 1. Install WARP CLI
+### 1. Install Layer9 CLI
 ```bash
-cargo install warp-cli
+cargo install layer9-cli
 ```
 
 ### 2. Create New Project
 ```bash
-warp new my-awesome-app
+layer9 new my-awesome-app
 cd my-awesome-app
 ```
 
 ### 3. Start Development
 ```bash
-warp dev
+layer9 dev
 # Visit http://localhost:3000
 ```
 
 ### 4. Build for Production
 ```bash
-warp build --mode production
+layer9 build --mode production
 ```
 
 ### 5. Deploy
 ```bash
 # Vercel
-warp deploy --target vercel
+layer9 deploy --target vercel
 
 # Or use Docker
 docker build -t my-app .
@@ -220,7 +220,7 @@ docker run -p 8080:8080 my-app
 
 ## 📊 Performance Comparison
 
-| Metric | Next.js | WARP | Improvement |
+| Metric | Next.js | Layer9 | Improvement |
 |--------|---------|------|-------------|
 | Bundle Size | 85kb | 45kb | 47% smaller |
 | First Paint | 1.2s | 0.6s | 50% faster |
@@ -250,13 +250,13 @@ let html = isr.get_or_generate(&app, "/blog", ctx).await?;
 
 ### API Routes
 ```rust
-#[warp::api("/api/hello")]
+#[layer9::api("/api/hello")]
 async fn hello(name: String) -> Result<String> {
     Ok(format!("Hello, {}!", name))
 }
 ```
 
-## 🌟 Why WARP?
+## 🌟 Why Layer9?
 
 ### For Developers
 - **100% Type Safe**: No runtime errors
@@ -286,7 +286,7 @@ export default function Page() {
   return <button onClick={() => setCount(count + 1)}>{count}</button>;
 }
 
-// After (WARP)
+// After (Layer9)
 struct Page;
 impl Component for Page {
     fn render(&self) -> Element {
@@ -302,10 +302,10 @@ impl Component for Page {
 
 ## 🎓 Learning Resources
 
-- **Documentation**: [warp.rs/docs](https://warp.rs/docs)
-- **Examples**: [github.com/warp-rs/examples](https://github.com/warp-rs/examples)
-- **Tutorial**: [Build a Todo App](https://warp.rs/tutorial)
-- **API Reference**: [docs.rs/warp](https://docs.rs/warp)
+- **Documentation**: [layer9.rs/docs](https://layer9.rs/docs)
+- **Examples**: [github.com/layer9-rs/examples](https://github.com/layer9-rs/examples)
+- **Tutorial**: [Build a Todo App](https://layer9.rs/tutorial)
+- **API Reference**: [docs.rs/layer9](https://docs.rs/layer9)
 
 ## 🚧 Roadmap
 
@@ -331,9 +331,9 @@ impl Component for Page {
 
 ## 💬 Community
 
-- **Discord**: [discord.gg/warp](https://discord.gg/warp)
-- **Twitter**: [@warpframework](https://twitter.com/warpframework)
-- **GitHub**: [github.com/warp-rs/warp](https://github.com/warp-rs/warp)
+- **Discord**: [discord.gg/layer9](https://discord.gg/layer9)
+- **Twitter**: [@layer9framework](https://twitter.com/layer9framework)
+- **GitHub**: [github.com/layer9-rs/layer9](https://github.com/layer9-rs/layer9)
 
 ## 📄 License
 
@@ -341,6 +341,6 @@ MIT - Build whatever you want!
 
 ---
 
-**WARP: Because Next.js is too flat, and your architecture deserves hierarchy.**
+**Layer9: Because Next.js is too flat, and your architecture deserves hierarchy.**
 
 *시발, 이제 진짜 쓸만해졌네!* 🚀

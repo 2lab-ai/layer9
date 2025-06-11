@@ -1,4 +1,4 @@
-//! WARP CLI - Development tools
+//! Layer9 CLI - Development tools
 
 use clap::{Parser, Subcommand};
 use colored::*;
@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use anyhow::{Result, Context};
 
 #[derive(Parser)]
-#[command(name = "warp")]
-#[command(about = "WARP - Web Architecture Rust Platform", long_about = None)]
+#[command(name = "layer9")]
+#[command(about = "Layer9 - Web Architecture Rust Platform", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -15,7 +15,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create a new WARP project
+    /// Create a new Layer9 project
     New {
         /// Project name
         name: String,
@@ -102,7 +102,7 @@ async fn new_project(name: &str, template: &str) -> Result<()> {
     use dialoguer::{theme::ColorfulTheme, Select};
     use indicatif::{ProgressBar, ProgressStyle};
     
-    println!("{}", "🚀 Creating new WARP project...".bright_blue().bold());
+    println!("{}", "🚀 Creating new Layer9 project...".bright_blue().bold());
     
     // Select template if not specified
     let template = if template == "default" {
@@ -142,7 +142,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-warp-framework = "0.1"
+layer9-framework = "0.1"
 wasm-bindgen = "0.2"
 web-sys = "0.3"
 console_error_panic_hook = "0.1"
@@ -170,9 +170,9 @@ lto = true
     std::fs::write(format!("{}/src/lib.rs", name), main_rs)?;
     pb.inc(1);
     
-    // Create warp.toml config
+    // Create layer9.toml config
     pb.set_message("Creating configuration");
-    let warp_toml = r#"[project]
+    let layer9_toml = r#"[project]
 name = "{name}"
 version = "0.1.0"
 
@@ -187,7 +187,7 @@ hot_reload = true
 [deploy]
 platform = "vercel"
 "#;
-    std::fs::write(format!("{}/warp.toml", name), warp_toml)?;
+    std::fs::write(format!("{}/layer9.toml", name), layer9_toml)?;
     pb.inc(1);
     
     // Create .gitignore
@@ -207,7 +207,7 @@ Cargo.lock
     println!("\n{}", "✨ Project created successfully!".green().bold());
     println!("\nTo get started:");
     println!("  {}", format!("cd {}", name).bright_black());
-    println!("  {}", "warp dev".bright_black());
+    println!("  {}", "layer9 dev".bright_black());
     
     Ok(())
 }
@@ -220,7 +220,7 @@ async fn dev_server(port: u16, hot: bool, open: bool) -> Result<()> {
     use notify::{Watcher, RecursiveMode, Event};
     use std::sync::mpsc;
     
-    println!("{}", "🔧 Starting WARP development server...".bright_blue().bold());
+    println!("{}", "🔧 Starting Layer9 development server...".bright_blue().bold());
     
     // Check if wasm-pack is installed
     if which::which("wasm-pack").is_err() {
@@ -317,7 +317,7 @@ async fn serve_index() -> axum::response::Html<String> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WARP Dev Server</title>
+    <title>Layer9 Dev Server</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -330,7 +330,7 @@ async fn serve_index() -> axum::response::Html<String> {
             justify-content: center;
             min-height: 100vh;
         }
-        #warp-root { width: 100%; }
+        #layer9-root { width: 100%; }
         .loading {
             text-align: center;
             padding: 2rem;
@@ -345,17 +345,17 @@ async fn serve_index() -> axum::response::Html<String> {
     </style>
 </head>
 <body>
-    <div id="warp-root">
+    <div id="layer9-root">
         <div class="loading">
-            <h1>Loading WARP...</h1>
+            <h1>Loading Layer9...</h1>
             <p>Initializing application...</p>
         </div>
     </div>
     <script type="module">
-        import init from './pkg/warp_app.js';
+        import init from './pkg/layer9_app.js';
         
         init().catch(err => {
-            document.getElementById('warp-root').innerHTML = `
+            document.getElementById('layer9-root').innerHTML = `
                 <div class="error">
                     <h2>Failed to load application</h2>
                     <pre>${err.message}</pre>
@@ -414,7 +414,7 @@ async fn build_project(mode: &str, output: &PathBuf, ssg: bool) -> Result<()> {
     // Optimize WASM size
     pb.set_message("Optimizing bundle size");
     if mode == "production" && which::which("wasm-opt").is_ok() {
-        let wasm_file = output.join("warp_app_bg.wasm");
+        let wasm_file = output.join("layer9_app_bg.wasm");
         std::process::Command::new("wasm-opt")
             .args(&["-Oz", "-o", wasm_file.to_str().unwrap(), wasm_file.to_str().unwrap()])
             .output()?;
@@ -433,8 +433,8 @@ async fn build_project(mode: &str, output: &PathBuf, ssg: bool) -> Result<()> {
     pb.finish_with_message("Build complete!");
     
     // Print bundle size
-    let wasm_size = std::fs::metadata(output.join("warp_app_bg.wasm"))?.len();
-    let js_size = std::fs::metadata(output.join("warp_app.js"))?.len();
+    let wasm_size = std::fs::metadata(output.join("layer9_app_bg.wasm"))?.len();
+    let js_size = std::fs::metadata(output.join("layer9_app.js"))?.len();
     
     println!("\n{}", "📊 Bundle Analysis:".green().bold());
     println!("  WASM: {}", format_size(wasm_size));

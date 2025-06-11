@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HAL9 Development Dashboard - WARP</title>
+    <title>HAL9 Development Dashboard - Layer9</title>
     <style>
         /* 2lab.ai style system */
         :root {
@@ -29,7 +29,7 @@
             min-height: 100vh;
         }
         
-        #warp-root {
+        #layer9-root {
             min-height: 100vh;
             padding: 2rem;
         }
@@ -199,20 +199,20 @@
     </style>
 </head>
 <body>
-    <div id="warp-root" class="loading">
+    <div id="layer9-root" class="loading">
         <div class="loading">
-            <h1>Initializing WARP...</h1>
+            <h1>Initializing Layer9...</h1>
             <p>Loading hierarchical consciousness layers...</p>
         </div>
     </div>
     
     <script type="module">
-        import init from './pkg/warp_github_dashboard.js';
+        import init from './pkg/layer9_github_dashboard.js';
         
         async function run() {
             await init();
             // Remove loading state
-            document.getElementById('warp-root').classList.remove('loading');
+            document.getElementById('layer9-root').classList.remove('loading');
         }
         
         run().catch(console.error);

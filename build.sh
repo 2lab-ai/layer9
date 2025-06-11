@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# WARP Build Script
+# Layer9 Build Script
 
 set -e
 
-echo "🚀 Building WARP Framework..."
+echo "🚀 Building Layer9 Framework..."
 
 # Install wasm-pack if not installed
 if ! command -v wasm-pack &> /dev/null; then

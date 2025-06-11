@@ -6,17 +6,17 @@ use wasm_bindgen::prelude::*;
 use std::sync::Mutex;
 
 /// Main application trait
-pub trait WarpApp: L8::Architecture {
+pub trait Layer9App: L8::Architecture {
     fn routes(&self) -> Vec<Route>;
     fn initialize(&self);
 }
 
 /// Global app instance
-static APP: Mutex<Option<Box<dyn WarpApp>>> = Mutex::new(None);
+static APP: Mutex<Option<Box<dyn Layer9App>>> = Mutex::new(None);
 
 /// Initialize and run the app
 #[wasm_bindgen]
-pub fn run_app(app: impl WarpApp + 'static) {
+pub fn run_app(app: impl Layer9App + 'static) {
     // Set panic hook for better error messages
     console_error_panic_hook::set_once();
     
@@ -63,7 +63,7 @@ impl AppBuilder {
         self
     }
     
-    pub fn build(self) -> impl WarpApp {
+    pub fn build(self) -> impl Layer9App {
         struct BuiltApp {
             name: String,
             routes: Vec<Route>,
@@ -90,13 +90,13 @@ impl AppBuilder {
             }
         }
         
-        impl WarpApp for BuiltApp {
+        impl Layer9App for BuiltApp {
             fn routes(&self) -> Vec<Route> {
                 self.routes.clone()
             }
             
             fn initialize(&self) {
-                web_sys::console::log_1(&format!("WARP App '{}' initialized", self.name).into());
+                web_sys::console::log_1(&format!("Layer9 App '{}' initialized", self.name).into());
             }
         }
         

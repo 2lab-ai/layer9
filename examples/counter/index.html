@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WARP Counter Example</title>
+    <title>Layer9 Counter Example</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -17,7 +17,7 @@
             min-height: 100vh;
         }
         
-        #warp-root {
+        #layer9-root {
             text-align: center;
             max-width: 600px;
             padding: 2rem;
@@ -87,18 +87,18 @@
     </style>
 </head>
 <body>
-    <div id="warp-root" class="loading">
-        <h1>Loading WARP...</h1>
+    <div id="layer9-root" class="loading">
+        <h1>Loading Layer9...</h1>
         <p>Initializing hierarchical layers...</p>
     </div>
     
     <script type="module">
-        import init from './pkg/warp_example_counter.js';
+        import init from './pkg/layer9_example_counter.js';
         
         async function run() {
             await init();
             // Remove loading class
-            document.getElementById('warp-root').classList.remove('loading');
+            document.getElementById('layer9-root').classList.remove('loading');
         }
         
         run();

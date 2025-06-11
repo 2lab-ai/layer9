@@ -1,4 +1,4 @@
-//! WARP Core - Hierarchical Web Framework
+//! Layer9 Core - Hierarchical Web Framework
 //! 
 //! L9 Philosophy: Consciousness-aware web development
 //! L8 Architecture: Enforced layer separation
@@ -6,7 +6,7 @@
 //! L6 Features: Modular feature system
 //! L5 Components: Type-safe reactive components
 //! L4 Services: Server/Client boundary
-//! L3 Runtime: WASM/JS execution
+//! L3 Runtime: Layer9SM/JS execution
 //! L2 Platform: Next.js compatibility
 //! L1 Infrastructure: Build and deploy
 
@@ -44,7 +44,7 @@ pub mod prelude {
     pub use crate::router::{Page, Route, RouteHandler};
     pub use crate::router_v2::{init_router, use_router, use_route, Link, navigate, route};
     pub use crate::server::{ServerFunction, Response};
-    pub use crate::app::{WarpApp, run_app};
+    pub use crate::app::{Layer9App, run_app};
     pub use crate::auth::{AuthService, use_auth, Protected};
     pub use crate::styles::{style, StyleBuilder, inject_global_styles};
     pub use crate::ui::*;
@@ -65,7 +65,7 @@ pub mod prelude {
     pub use crate::security::{use_security, use_csrf_token, XssProtection};
     pub use crate::monitoring::{use_metrics, use_performance, use_analytics};
     pub use crate::api_docs::{OpenApiBuilder, ApiDoc, SchemaBuilder};
-    pub use warp_macro::{warp_app, page, component, server};
+    pub use layer9_macro::{layer9_app, page, component, server};
 }
 
 // Layer validation at compile time

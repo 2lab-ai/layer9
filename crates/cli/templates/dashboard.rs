@@ -1,6 +1,6 @@
-//! Dashboard WARP Application
+//! Dashboard Layer9 Application
 
-use warp_framework::prelude::*;
+use layer9_framework::prelude::*;
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -131,7 +131,7 @@ impl Component for Header {
         
         view! {
             <header style={header_style.build()}>
-                <h1>"WARP Dashboard"</h1>
+                <h1>"Layer9 Dashboard"</h1>
                 
                 <nav>
                     {Link::new("/")

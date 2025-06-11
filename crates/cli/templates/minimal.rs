@@ -1,6 +1,6 @@
-//! Minimal WARP Application
+//! Minimal Layer9 Application
 
-use warp_framework::prelude::*;
+use layer9_framework::prelude::*;
 use wasm_bindgen::prelude::*;
 
 // Define your app
@@ -14,7 +14,7 @@ impl WarpApp for App {
                 path: "/".to_string(),
                 handler: RouteHandler::Page(|| {
                     Page::new()
-                        .title("WARP App")
+                        .title("Layer9 App")
                         .component(HomePage)
                 }),
             },
@@ -23,7 +23,7 @@ impl WarpApp for App {
     
     fn initialize(&self) {
         inject_global_styles();
-        web_sys::console::log_1(&"WARP App initialized!".into());
+        web_sys::console::log_1(&"Layer9 App initialized!".into());
     }
 }
 
@@ -49,7 +49,7 @@ impl Component for HomePage {
     fn render(&self) -> Element {
         view! {
             <div class="container">
-                <h1>"Welcome to WARP"</h1>
+                <h1>"Welcome to Layer9"</h1>
                 <p>"Web Architecture Rust Platform"</p>
                 {Button::new("Get Started")
                     .variant(ButtonVariant::Primary)

@@ -1,4 +1,4 @@
-# WARP - Web Architecture Rust Platform
+# Layer9 - Web Architecture Rust Platform
 
 > Next.js의 성능, Rust의 계층적 추상화
 
@@ -37,21 +37,21 @@
 ## 📦 Quick Start
 
 ```bash
-# Install WARP CLI
-cargo install warp-cli
+# Install Layer9 CLI
+cargo install layer9-cli
 
 # Create new project
-warp new my-app
+layer9 new my-app
 cd my-app
 
 # Start development server
-warp dev
+layer9 dev
 
 # Build for production
-warp build --ssg
+layer9 build --ssg
 
 # Deploy to Vercel
-warp deploy
+layer9 deploy
 ```
 
 ## 🏗️ Architecture
@@ -71,7 +71,7 @@ L1: Infrastructure → Build & deploy
 ## 💻 Example
 
 ```rust
-use warp::prelude::*;
+use layer9::prelude::*;
 
 #[component]
 fn Counter() -> Element {
@@ -87,10 +87,10 @@ fn Counter() -> Element {
     }
 }
 
-#[warp::app]
+#[layer9::app]
 struct App;
 
-impl WarpApp for App {
+impl Layer9App for App {
     fn routes(&self) -> Vec<Route> {
         vec![
             route("/", |_| Box::new(HomePage)),
@@ -100,7 +100,7 @@ impl WarpApp for App {
 }
 ```
 
-## 🎯 Why WARP?
+## 🎯 Why Layer9?
 
 ### vs Next.js
 - **100% Type Safe** - No runtime errors
@@ -117,20 +117,20 @@ impl WarpApp for App {
 ## 🛠️ CLI Commands
 
 ```bash
-warp new <name>    # Create new project
-warp dev           # Start dev server
-warp build         # Build for production
-warp check         # Type check
-warp fmt           # Format code
-warp deploy        # Deploy to cloud
+layer9 new <name>    # Create new project
+layer9 dev           # Start dev server
+layer9 build         # Build for production
+layer9 check         # Type check
+layer9 fmt           # Format code
+layer9 deploy        # Deploy to cloud
 ```
 
 ## 📚 Documentation
 
-- [Getting Started](https://warp.rs/docs/getting-started)
-- [Architecture Guide](https://warp.rs/docs/architecture)
-- [API Reference](https://docs.rs/warp)
-- [Examples](https://github.com/warp-rs/examples)
+- [Getting Started](https://layer9.rs/docs/getting-started)
+- [Architecture Guide](https://layer9.rs/docs/architecture)
+- [API Reference](https://docs.rs/layer9)
+- [Examples](https://github.com/layer9-rs/examples)
 
 ## 🤝 Contributing
 
@@ -142,6 +142,6 @@ MIT - See [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ by the WARP team**
+**Built with ❤️ by the Layer9 team**
 
 *"시발, 우주가 컴퓨터네" - and we're building the framework to prove it.*

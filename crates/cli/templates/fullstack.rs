@@ -1,6 +1,6 @@
-//! Full-Stack WARP Application with SSR
+//! Full-Stack Layer9 Application with SSR
 
-use warp_framework::prelude::*;
+use layer9_framework::prelude::*;
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,7 @@ impl WarpApp for App {
                 path: "/".to_string(),
                 handler: RouteHandler::Page(|| {
                     Page::new()
-                        .title("Full-Stack WARP")
+                        .title("Full-Stack Layer9")
                         .component(HomePage)
                 }),
             },
@@ -75,14 +75,14 @@ impl SSRApp for App {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
-    <meta name="description" content="Full-Stack WARP Application">
+    <meta name="description" content="Full-Stack Layer9 Application">
     <style>{styles}</style>
-    <script>window.__WARP_PROPS__ = {props};</script>
+    <script>window.__Layer9_PROPS__ = {props};</script>
 </head>
 <body>
-    <div id="warp-root">{content}</div>
+    <div id="layer9-root">{content}</div>
     <script type="module">
-        import init, { hydrate_app } from '/warp_bundle.js';
+        import init, { hydrate_app } from '/layer9_bundle.js';
         init().then(() => {
             hydrate_app();
         });
@@ -118,7 +118,7 @@ impl SSRComponent for HomePage {
         // Fetch data on server
         Ok(serde_json::json!({
             "featured_todos": [
-                {"id": 1, "text": "Build with WARP", "done": false},
+                {"id": 1, "text": "Build with Layer9", "done": false},
                 {"id": 2, "text": "Deploy to production", "done": false},
             ]
         }))
@@ -143,7 +143,7 @@ impl Component for Navigation {
         view! {
             <nav style={nav_style.build()}>
                 <div class="logo">
-                    <h1>"WARP"</h1>
+                    <h1>"Layer9"</h1>
                 </div>
                 
                 <div class="nav-links">
@@ -337,7 +337,7 @@ impl Component for AboutPage {
             <div>
                 <Navigation />
                 <main>
-                    <h1>"About WARP"</h1>
+                    <h1>"About Layer9"</h1>
                     <p>"Web Architecture Rust Platform"</p>
                 </main>
             </div>
@@ -395,7 +395,7 @@ impl Component for Footer {
         
         view! {
             <footer style={footer_style.build()}>
-                <p>"Built with WARP - Web Architecture Rust Platform"</p>
+                <p>"Built with Layer9 - Web Architecture Rust Platform"</p>
             </footer>
         }
     }
@@ -434,7 +434,7 @@ struct TodosResponse {
 // Global state
 static TODOS_ATOM: Lazy<Atom<Vec<Todo>>> = Lazy::new(|| {
     create_atom(vec![
-        Todo { id: 1, text: "Learn WARP".to_string(), done: false },
+        Todo { id: 1, text: "Learn Layer9".to_string(), done: false },
         Todo { id: 2, text: "Build something awesome".to_string(), done: false },
     ])
 });
@@ -485,7 +485,7 @@ use once_cell::sync::Lazy;
 pub fn main() {
     // Check if we're hydrating SSR content
     if let Some(window) = web_sys::window() {
-        if js_sys::Reflect::has(&window, &"__WARP_PROPS__".into()).unwrap_or(false) {
+        if js_sys::Reflect::has(&window, &"__Layer9_PROPS__".into()).unwrap_or(false) {
             hydrate_app(App);
         } else {
             run_app(App);

@@ -1,15 +1,15 @@
-//! Production-Ready WARP Application Example
+//! Production-Ready Layer9 Application Example
 //! Demonstrates all production features in action
 
-use warp::prelude::*;
+use layer9::prelude::*;
 use std::collections::HashMap;
 
-#[warp_app]
+#[layer9_app]
 struct ProductionApp {
     title: String,
 }
 
-impl WarpApp for ProductionApp {
+impl Layer9App for ProductionApp {
     fn init() -> Self {
         // Initialize i18n
         init_i18n(
@@ -25,7 +25,7 @@ impl WarpApp for ProductionApp {
         init_router();
         
         ProductionApp {
-            title: "Production WARP App".to_string(),
+            title: "Production Layer9 App".to_string(),
         }
     }
     

@@ -1,6 +1,6 @@
-//! GitHub Dashboard - 2lab.ai style in WARP
+//! GitHub Dashboard - 2lab.ai style in Layer9
 
-use warp_framework::prelude::*;
+use layer9_framework::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use serde::{Deserialize, Serialize};
@@ -449,7 +449,7 @@ async fn fetch_github_stats() -> Result<GitHubStats, String> {
 #[wasm_bindgen]
 pub struct App;
 
-impl WarpApp for App {
+impl Layer9App for App {
     fn routes(&self) -> Vec<Route> {
         vec![
             Route {
@@ -465,7 +465,7 @@ impl WarpApp for App {
     
     fn initialize(&self) {
         inject_global_styles();
-        web_sys::console::log_1(&"WARP GitHub Dashboard initialized!".into());
+        web_sys::console::log_1(&"Layer9 GitHub Dashboard initialized!".into());
     }
 }
 

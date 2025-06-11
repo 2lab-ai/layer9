@@ -1,5 +1,5 @@
 //! Database/ORM Layer - L2/L3
-//! WARP Database abstraction with support for multiple backends
+//! Layer9 Database abstraction with support for multiple backends
 
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};

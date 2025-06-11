@@ -1,10 +1,10 @@
 [package]
-name = "warp-cli"
+name = "layer9-cli"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "warp"
+name = "layer9"
 path = "src/main.rs"
 
 [dependencies]
@@ -15,7 +15,7 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["fs", "cors"] }
 tower-livereload = "0.9"
 notify = "6"
-warp-framework = { path = ".." }
+layer9-framework = { path = ".." }
 
 # Build tools
 wasm-pack = "0.12"

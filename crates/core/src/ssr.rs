@@ -77,7 +77,7 @@ fn html_escape(text: &str) -> String {
 }
 
 /// SSR App trait
-pub trait SSRApp: WarpApp {
+pub trait SSRApp: Layer9App {
     /// Get HTML template
     fn html_template(&self) -> &'static str {
         r#"<!DOCTYPE html>
@@ -87,14 +87,14 @@ pub trait SSRApp: WarpApp {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <style>{styles}</style>
-    <script>window.__WARP_PROPS__ = {props};</script>
+    <script>window.__Layer9_PROPS__ = {props};</script>
 </head>
 <body>
-    <div id="warp-root">{content}</div>
+    <div id="layer9-root">{content}</div>
     <script type="module">
-        import init from '/warp_bundle.js';
+        import init from '/layer9_bundle.js';
         init().then(() => {
-            window.__WARP_HYDRATE__();
+            window.__Layer9_HYDRATE__();
         });
     </script>
 </body>
@@ -182,18 +182,18 @@ pub fn create_ssr_server<T: SSRApp + Send + Sync + 'static>(app: T) -> Router {
             }
         }))
         // Static files
-        .route("/warp_bundle.js", get(|| async {
-            // In production, serve the actual WASM bundle
-            "// WARP bundle placeholder"
+        .route("/layer9_bundle.js", get(|| async {
+            // In production, serve the actual Layer9SM bundle
+            "// Layer9 bundle placeholder"
         }))
 }
 
 /// Hydration helper for client side
 #[wasm_bindgen]
-pub fn hydrate_app(app: impl WarpApp + 'static) {
+pub fn hydrate_app(app: impl Layer9App + 'static) {
     // Get props from server
     let window = web_sys::window().unwrap();
-    let props = js_sys::Reflect::get(&window, &"__WARP_PROPS__".into())
+    let props = js_sys::Reflect::get(&window, &"__Layer9_PROPS__".into())
         .ok()
         .and_then(|v| serde_wasm_bindgen::from_value(v).ok());
     

@@ -162,7 +162,7 @@ impl I18nContext {
         if let Some(storage) = web_sys::window()
             .and_then(|w| w.local_storage().ok())
             .flatten() {
-            let _ = storage.set_item("warp-locale", locale.code());
+            let _ = storage.set_item("layer9-locale", locale.code());
         }
         
         // Update document lang attribute
@@ -304,7 +304,7 @@ fn detect_browser_locale() -> Option<Locale> {
     if let Some(storage) = web_sys::window()
         .and_then(|w| w.local_storage().ok())
         .flatten() {
-        if let Ok(Some(stored)) = storage.get_item("warp-locale") {
+        if let Ok(Some(stored)) = storage.get_item("layer9-locale") {
             if let Some(locale) = Locale::from_code(&stored) {
                 return Some(locale);
             }

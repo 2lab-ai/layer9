@@ -1,12 +1,12 @@
-//! WARP Procedural Macros
+//! Layer9 Procedural Macros
 
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput, ItemFn, ItemStruct};
 
-/// Macro for defining WARP apps
+/// Macro for defining Layer9 apps
 #[proc_macro_attribute]
-pub fn warp_app(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn layer9_app(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
     let name = &input.ident;
     

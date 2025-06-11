@@ -1,4 +1,4 @@
-# WARP Production Roadmap - 2lab.ai 완전 포팅
+# Layer9 Production Roadmap - 2lab.ai 완전 포팅
 
 ## 🎯 목표: Next.js 없이 2lab.ai 구동
 
@@ -49,7 +49,7 @@ mod ui {
     - Dialog, Dropdown, Toast
     - Tabs, Accordion, Avatar
     - Progress, Badge, Skeleton
-    // 각각 WARP 컴포넌트로
+    // 각각 Layer9 컴포넌트로
 }
 ```
 
@@ -117,11 +117,11 @@ mod dx {
 ## 💡 해결 방안
 
 ### 1. Hybrid Approach (단기)
-- Critical path만 WARP
+- Critical path만 Layer9
 - UI는 일단 Next.js 유지
 - 점진적 마이그레이션
 
-### 2. Full WARP Stack (장기)
+### 2. Full Layer9 Stack (장기)
 - 모든 기능 Rust로 재구현
 - 새로운 웹 표준 정립
 - Next.js 대체 프레임워크
@@ -151,6 +151,6 @@ mod dx {
 3. SSR without Node.js
 
 **추천: Hybrid 접근**
-- 성능 critical한 부분만 WARP
+- 성능 critical한 부분만 Layer9
 - UI는 Next.js 유지
 - 점진적으로 포팅

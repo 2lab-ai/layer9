@@ -100,8 +100,8 @@ impl AuthService {
     
     async fn logout(&self) -> AuthResponse {
         // Clear storage
-        let _ = self.storage.remove_item("warp_auth_token");
-        let _ = self.storage.remove_item("warp_auth_user");
+        let _ = self.storage.remove_item("layer9_auth_token");
+        let _ = self.storage.remove_item("layer9_auth_user");
         
         AuthResponse::Success(AuthState {
             user: None,
@@ -112,7 +112,7 @@ impl AuthService {
     
     async fn refresh_token(&self) -> AuthResponse {
         // Check if token is expired
-        if let Ok(Some(token)) = self.storage.get_item("warp_auth_token") {
+        if let Ok(Some(token)) = self.storage.get_item("layer9_auth_token") {
             // TODO: Verify JWT and refresh if needed
             AuthResponse::Success(self.get_state())
         } else {
@@ -126,18 +126,18 @@ impl AuthService {
     
     fn get_state(&self) -> AuthState {
         let user = self.storage
-            .get_item("warp_auth_user")
+            .get_item("layer9_auth_user")
             .ok()
             .flatten()
             .and_then(|s| serde_json::from_str(&s).ok());
         
         let token = self.storage
-            .get_item("warp_auth_token")
+            .get_item("layer9_auth_token")
             .ok()
             .flatten();
         
         let expires_at = self.storage
-            .get_item("warp_auth_expires")
+            .get_item("layer9_auth_expires")
             .ok()
             .flatten()
             .and_then(|s| s.parse().ok());

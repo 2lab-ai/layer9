@@ -1,4 +1,4 @@
-# WARP Porting Status - 2lab.ai
+# Layer9 Porting Status - 2lab.ai
 
 ## ✅ 완성된 기능들
 
@@ -96,14 +96,14 @@ let style = style![
 
 ## 📊 비교표
 
-| Feature | Next.js | WARP | Status |
+| Feature | Next.js | Layer9 | Status |
 |---------|---------|------|--------|
 | 계층적 추상화 | ❌ | ✅ | Complete |
 | 타입 안정성 | Partial | 100% | Complete |
 | 인증 시스템 | NextAuth | Native OAuth | Complete |
 | 스타일링 | Tailwind CSS | CSS-in-Rust | Complete |
-| UI 컴포넌트 | shadcn/ui | WARP UI | Complete |
-| 라우팅 | App Router | WARP Router | Complete |
+| UI 컴포넌트 | shadcn/ui | Layer9 UI | Complete |
+| 라우팅 | App Router | Layer9 Router | Complete |
 | SSR/SSG | ✅ | ❌ | TODO |
 | 이미지 최적화 | Next/Image | ❌ | TODO |
 | 환경 변수 | ✅ | ❌ | TODO |
@@ -125,7 +125,7 @@ let style = style![
 
 ```bash
 # GitHub Dashboard 예제 실행
-cd warp/examples/github-dashboard
+cd layer9/examples/github-dashboard
 wasm-pack build --target web
 python3 -m http.server 8080
 
@@ -134,7 +134,7 @@ python3 -m http.server 8080
 
 ## 💭 결론
 
-**WARP는 이미 2lab.ai의 핵심 기능 대부분을 구현 가능**하다. 
+**Layer9는 이미 2lab.ai의 핵심 기능 대부분을 구현 가능**하다. 
 
 하지만 완전한 포팅을 위해서는:
 1. SSR/SSG 지원 (가장 중요)
@@ -142,7 +142,7 @@ python3 -m http.server 8080
 3. 개발자 경험 개선 (HMR, 에러 처리)
 
 **추천: Hybrid 접근법**
-- 성능 중요한 부분: WARP로 구현
+- 성능 중요한 부분: Layer9로 구현
 - SEO 중요한 부분: Next.js 유지
 - 점진적 마이그레이션
 

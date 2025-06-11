@@ -493,7 +493,7 @@ impl SecurityContext {
 /// Security hooks
 pub fn use_security() -> SecurityContext {
     // In real app, this would get from context
-    SecurityContext::new("warp-secret-key")
+    SecurityContext::new("layer9-secret-key")
 }
 
 pub fn use_csrf_token() -> String {

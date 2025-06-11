@@ -517,7 +517,7 @@ pub fn use_cache<T: Clone + 'static>() -> Cache<T> {
 
 pub fn use_local_cache() -> Cache<String> {
     Cache::new(
-        LocalStorageCache::new("warp-cache"),
+        LocalStorageCache::new("layer9-cache"),
         InvalidationStrategy::Manual,
     )
 }
