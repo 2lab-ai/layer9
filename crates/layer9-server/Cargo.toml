@@ -14,5 +14,5 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "6"
 futures = "0.3"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "env"] }
 # axum-test = "18.0.0-rc3"  # Add when needed for tests
