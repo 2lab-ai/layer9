@@ -24,6 +24,7 @@ pub mod env;
 pub mod error;
 pub mod fetch;
 pub mod form;
+pub mod hooks;
 pub mod i18n;
 pub mod image;
 pub mod layers;
@@ -55,6 +56,11 @@ pub mod prelude {
     pub use crate::error::{use_error_handler, ErrorBoundary};
     pub use crate::fetch::{get, post, FetchBuilder, Method, SWR};
     pub use crate::form::{use_form, Form, FormConfig};
+    pub use crate::hooks::{
+        use_state as use_state_hook, use_reducer, use_effect, use_memo, use_callback, 
+        use_ref, use_layout_effect, use_context, provide_context, Context as HookContext,
+        use_counter, use_previous, use_debounce
+    };
     pub use crate::i18n::{use_i18n, Locale};
     pub use crate::image::{Image, Picture};
     pub use crate::layers::*;
@@ -69,6 +75,7 @@ pub mod prelude {
     pub use crate::ssr::{create_ssr_server, hydrate, hydrate_app_internal, SSRApp, SSRComponent, SSG};
     pub use crate::state::{
         create_app_store, create_atom, use_atom, use_selector, AppAction, AppState,
+        // Note: use_effect is now provided by hooks module
     };
     pub use crate::styles::{inject_global_styles, style, StyleBuilder};
     pub use crate::test::{TestContext, TestResult, TestUtils};

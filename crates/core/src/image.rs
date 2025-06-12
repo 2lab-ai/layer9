@@ -2,7 +2,7 @@
 
 use crate::component::{use_state, Component};
 use crate::prelude::*;
-use crate::state::use_effect;
+use crate::hooks::use_effect;
 use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
@@ -407,7 +407,8 @@ impl Component for BackgroundImage {
         // Set up intersection observer for lazy loading
         if matches!(self.loading, ImageLoading::Lazy) {
             let loaded_clone = loaded.clone();
-            use_effect(|| {
+            let container_id_clone = container_id.clone();
+            use_effect((), move || {
                 let observer = IntersectionObserver::new(
                     Closure::<dyn FnMut(Vec<IntersectionObserverEntry>)>::new(
                         move |entries: Vec<IntersectionObserverEntry>| {
@@ -426,7 +427,7 @@ impl Component for BackgroundImage {
 
                 if let Some(element) = web_sys::window()
                     .and_then(|w| w.document())
-                    .and_then(|d| d.get_element_by_id(&container_id))
+                    .and_then(|d| d.get_element_by_id(&container_id_clone))
                 {
                     observer.observe(&element);
                 }

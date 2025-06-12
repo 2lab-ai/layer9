@@ -6,8 +6,6 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
-use wasm_bindgen::prelude::*;
 use web_sys::{Element as DomElement, Node};
 
 use crate::component::{Component, Element};
@@ -25,6 +23,7 @@ pub fn init_renderer() {
 
 /// Component instance with unique ID
 pub struct ComponentInstance {
+    #[allow(dead_code)]
     id: ComponentId,
     component: Box<dyn Component>,
     dom_node: Option<Node>,
@@ -137,10 +136,16 @@ impl Renderer {
 
     /// Render a specific component
     fn render_component(&mut self, component_id: ComponentId) {
+        // Reset hook index before rendering
+        crate::hooks::reset_hook_index();
+        
         // Get component and render new VDOM
         let (new_vdom, old_vdom) = {
             let instance = self.components.get(&component_id).unwrap();
-            let new_vdom = instance.component.render();
+            // Render within component context for hooks
+            let new_vdom = with_current_component(component_id, || {
+                instance.component.render()
+            });
             let old_vdom = instance.vdom.clone();
             (new_vdom, old_vdom)
         };
@@ -334,6 +339,9 @@ impl Renderer {
             for cleanup in instance.effects.drain(..) {
                 cleanup();
             }
+            
+            // Clean up component hooks
+            crate::hooks::cleanup_component_hooks(component_id);
 
             // Remove from parent's child list
             if let Some(parent_id) = instance.parent_id {
@@ -370,6 +378,7 @@ enum Patch {
     },
     InsertChild {
         path: Vec<usize>,
+        #[allow(dead_code)]
         index: usize,
         element: Element,
     },
@@ -379,8 +388,8 @@ enum Patch {
     },
 }
 
-/// Get the current component ID (used by hooks)
 thread_local! {
+    /// Current component ID (used by hooks)
     static CURRENT_COMPONENT: RefCell<Option<ComponentId>> = RefCell::new(None);
 }
 

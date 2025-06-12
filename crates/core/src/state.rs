@@ -4,6 +4,7 @@ use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use crate::hooks::use_effect;
 
 // Type alias to simplify complex types
 type ReducerFn<S, A> = Rc<dyn Fn(&S, A) -> S>;
@@ -117,8 +118,8 @@ pub fn use_atom<T: 'static + Clone>(atom: &Atom<T>) -> AtomHandle<T> {
         update_trigger();
     });
 
-    // Cleanup on unmount
-    use_effect(move || {
+    // Cleanup on unmount (run once with empty deps)
+    use_effect((), move || {
         move || {
             STORE.with(|store| {
                 store.borrow_mut().unsubscribe(sub_id);
@@ -183,8 +184,8 @@ pub fn use_selector<T: 'static + Clone, U: 'static + Clone>(
         update_trigger();
     });
 
-    // Cleanup
-    use_effect(move || {
+    // Cleanup (run once with empty deps)
+    use_effect((), move || {
         move || {
             STORE.with(|store| {
                 store.borrow_mut().unsubscribe(sub_id);
@@ -243,17 +244,7 @@ fn use_update() -> impl Fn() {
     }
 }
 
-pub fn use_effect<F, C>(effect: F)
-where
-    F: FnOnce() -> C,
-    C: FnOnce() + 'static,
-{
-    // Run effect and register cleanup with the reactive system
-    crate::reactive::run_current_effect(|| {
-        let cleanup = effect();
-        Box::new(cleanup) as Box<dyn FnOnce()>
-    });
-}
+// use_effect is now provided by the hooks module
 
 // Make types cloneable for convenience
 impl<T> Clone for Atom<T> {
