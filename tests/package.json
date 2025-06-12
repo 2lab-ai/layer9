@@ -1,0 +1,20 @@
+{
+  "name": "layer9-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive Puppeteer tests for Layer9 examples",
+  "scripts": {
+    "test": "node test-runner.js",
+    "test:counter": "node e2e/counter.test.js",
+    "test:async-counter": "node e2e/async-counter.test.js",
+    "test:todo": "node e2e/todo-app.test.js",
+    "test:memory": "node e2e/memory-game.test.js",
+    "test:all": "npm run test",
+    "serve": "python3 -m http.server 8000 -d .."
+  },
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  },
+  "devDependencies": {
+    "chalk": "^5.3.0"
+  }
+}

@@ -30,7 +30,13 @@
     "type": "git",
     "url": "git+https://github.com/2lab-ai/layer9.git"
   },
-  "keywords": ["wasm", "rust", "web-framework", "layer9", "hierarchical"],
+  "keywords": [
+    "wasm",
+    "rust",
+    "web-framework",
+    "layer9",
+    "hierarchical"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -38,6 +44,6 @@
   },
   "homepage": "https://github.com/2lab-ai/layer9#readme",
   "devDependencies": {
-    "puppeteer": "^24.10.0"
+    "puppeteer": "^24.10.1"
   }
 }
