@@ -10,6 +10,10 @@ use layer9_core::{
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
+// Use `wee_alloc` as the global allocator for smaller bundle size
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 // Counter component that uses Layer9 framework
 struct CounterComponent {
     count: State<i32>,
@@ -174,7 +178,13 @@ impl Component for AppComponent {
                 Element::Node {
                     tag: "style".to_string(),
                     props: Props::default(),
-                    children: vec![Element::Text(include_str!("../styles.css").to_string())],
+                    children: vec![Element::Text(
+                        if cfg!(debug_assertions) {
+                            include_str!("../styles.css")
+                        } else {
+                            include_str!("../styles.min.css")
+                        }.to_string()
+                    )],
                 },
                 // Render counter
                 self.counter.render(),
