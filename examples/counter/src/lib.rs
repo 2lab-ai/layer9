@@ -10,22 +10,38 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-// Counter component with reactive state
-struct CounterApp {
-    count: State<i32>,
-}
-
-impl CounterApp {
-    fn new() -> Self {
-        Self {
-            count: State::new(0),
-        }
-    }
-}
+// Counter component using hooks
+struct CounterApp;
 
 impl Component for CounterApp {
     fn render(&self) -> Element {
-        let count_value = self.count.get();
+        // Use the hooks system for state management
+        let (count, set_count) = use_state_hook(0);
+        
+        // Use effect to log count changes
+        use_effect(count, {
+            let count = count;
+            move || {
+                web_sys::console::log_1(&format!("Count changed to: {}", count).into());
+                || {} // Cleanup function
+            }
+        });
+        
+        // Create increment and decrement callbacks
+        let increment = {
+            let set_count = set_count.clone();
+            move || set_count(count + 1)
+        };
+        
+        let decrement = {
+            let set_count = set_count.clone();
+            move || set_count(count - 1)
+        };
+        
+        let reset = {
+            let set_count = set_count.clone();
+            move || set_count(0)
+        };
 
         // Create the root element with reactive event handlers
         Element::Node {
@@ -60,7 +76,7 @@ impl Component for CounterApp {
                         class: Some("counter-value".to_string()),
                         ..Default::default()
                     },
-                    children: vec![Element::Text(format!("Count: {}", count_value))],
+                    children: vec![Element::Text(format!("Count: {}", count))],
                 },
                 // Button container
                 Element::Node {
@@ -75,10 +91,7 @@ impl Component for CounterApp {
                             tag: "button".to_string(),
                             props: Props {
                                 class: Some("btn btn-primary".to_string()),
-                                on_click: Some(std::rc::Rc::new({
-                                    let count = self.count.clone();
-                                    move || count.set(count.get() + 1)
-                                })),
+                                on_click: Some(std::rc::Rc::new(increment.clone())),
                                 ..Default::default()
                             },
                             children: vec![Element::Text("Increment".to_string())],
@@ -88,10 +101,7 @@ impl Component for CounterApp {
                             tag: "button".to_string(),
                             props: Props {
                                 class: Some("btn btn-secondary".to_string()),
-                                on_click: Some(std::rc::Rc::new({
-                                    let count = self.count.clone();
-                                    move || count.set(count.get() - 1)
-                                })),
+                                on_click: Some(std::rc::Rc::new(decrement.clone())),
                                 ..Default::default()
                             },
                             children: vec![Element::Text("Decrement".to_string())],
@@ -101,10 +111,7 @@ impl Component for CounterApp {
                             tag: "button".to_string(),
                             props: Props {
                                 class: Some("btn btn-warning".to_string()),
-                                on_click: Some(std::rc::Rc::new({
-                                    let count = self.count.clone();
-                                    move || count.set(0)
-                                })),
+                                on_click: Some(std::rc::Rc::new(reset)),
                                 ..Default::default()
                             },
                             children: vec![Element::Text("Reset".to_string())],
@@ -139,8 +146,7 @@ pub fn main() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
 
     // Create and mount the app using the reactive renderer
-    let app = CounterApp::new();
-    mount(Box::new(app), "root");
+    mount(Box::new(CounterApp), "root");
 
     // Log success
     web_sys::console::log_1(&"Layer9 Counter App initialized with reactive rendering!".into());
