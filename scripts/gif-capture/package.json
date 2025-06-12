@@ -1,0 +1,19 @@
+{
+  "name": "layer9-gif-capture",
+  "version": "1.0.0",
+  "description": "Automated GIF capture for Layer9 examples",
+  "scripts": {
+    "capture": "node capture-all-examples.js",
+    "create-gifs": "node create-gifs.js",
+    "start-servers": "./start-servers.sh",
+    "stop-servers": "./stop-servers.sh",
+    "check": "node capture-all-examples.js --check",
+    "all": "./capture-and-create-gifs.sh"
+  },
+  "dependencies": {
+    "puppeteer": "^21.11.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
