@@ -56,6 +56,7 @@ js-sys = "0.3"
 futures = "0.3"
 wasm-bindgen-futures = "0.4"
 async-trait = "0.1"
+gloo-timers = { version = "0.3", features = ["futures"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -89,3 +90,4 @@ wasm-bindgen-test = "0.3"
 [features]
 default = []
 ssr = ["axum", "tokio", "tower", "tower-http", "sqlx", "uuid"]
+wasm = []

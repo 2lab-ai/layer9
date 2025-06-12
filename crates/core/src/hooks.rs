@@ -348,6 +348,7 @@ macro_rules! impl_deps_list_tuple {
             fn deps_equal(&self, other: &[Box<dyn Any>]) -> bool {
                 #[allow(non_snake_case, unused_mut)]
                 let ($($T,)*) = self;
+                #[allow(unused_mut)]
                 let mut idx = 0;
                 $(
                     if idx >= other.len() {

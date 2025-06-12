@@ -12,6 +12,8 @@
 
 pub mod api_docs;
 pub mod app;
+// pub mod async_component; // Using v2 instead
+pub mod async_component_v2;
 pub mod auth;
 pub mod cache;
 pub mod component;
@@ -48,6 +50,10 @@ pub mod websocket;
 pub mod prelude {
     pub use crate::api_docs::{ApiDoc, OpenApiBuilder, SchemaBuilder};
     pub use crate::app::{run_app, Layer9App};
+    pub use crate::async_component_v2::{
+        use_async_data, with_error_boundary, 
+        AsyncData, AsyncState, Suspense
+    };
     pub use crate::auth::{use_auth, AuthService, Protected};
     pub use crate::cache::{use_cache, use_http_cache, InvalidationStrategy};
     pub use crate::component::{use_state, view, Component, Element, Props, State};

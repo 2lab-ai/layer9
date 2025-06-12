@@ -128,6 +128,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
+name = "async-counter"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "gloo-timers",
+ "layer9-core",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wee_alloc",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1001,6 +1013,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 
 [[package]]
+name = "gloo-timers"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1488,6 +1512,7 @@ dependencies = [
  "console_error_panic_hook",
  "downcast-rs",
  "futures",
+ "gloo-timers",
  "js-sys",
  "once_cell",
  "regex",
