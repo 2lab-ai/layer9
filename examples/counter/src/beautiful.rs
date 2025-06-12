@@ -1,21 +1,19 @@
-//! Layer9 Counter Example - Beautiful Reactive Counter
+//! Beautiful Counter Example - Showcasing Layer9's Reactive Features
 //!
-//! A stunning counter showcasing Layer9's reactive features with modern UI design
+//! A stunning counter with animations, gradients, and modern UI design
 
 use layer9_core::prelude::*;
-use layer9_core::hooks::use_state;
+use layer9_core::hooks::use_state_hook as use_state;
 use layer9_core::reactive_v2::mount;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
-// Use `wee_alloc` as the global allocator for smaller bundle size
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-// Beautiful counter component
-struct CounterApp;
+struct BeautifulCounter;
 
-impl Component for CounterApp {
+impl Component for BeautifulCounter {
     fn render(&self) -> Element {
         let (count, set_count) = use_state(0i32);
         let (animation_class, set_animation_class) = use_state(String::new());
@@ -697,15 +695,8 @@ const BEAUTIFUL_STYLES: &str = r#"
 "#;
 
 #[wasm_bindgen(start)]
-pub fn main() -> Result<(), JsValue> {
-    // Set panic hook for better error messages
-    console_error_panic_hook::set_once();
-
-    // Create and mount the app using the reactive renderer
-    mount(Box::new(CounterApp), "root");
-
-    // Log success
-    web_sys::console::log_1(&"Layer9 Counter App initialized with reactive rendering!".into());
-
-    Ok(())
+pub fn main() {
+    web_sys::console::log_1(&"Beautiful Layer9 Counter starting...".into());
+    mount(Box::new(BeautifulCounter), "root");
+    web_sys::console::log_1(&"Beautiful Layer9 Counter mounted successfully!".into());
 }

@@ -1,0 +1,15 @@
+{
+  "success": false,
+  "errors": [
+    "Error: closure invoked recursively or after being dropped",
+    "Error: closure invoked recursively or after being dropped",
+    "Error: closure invoked recursively or after being dropped"
+  ],
+  "warnings": [],
+  "logs": [
+    {
+      "type": "log",
+      "text": "Layer9 Counter App initialized with reactive rendering!"
+    }
+  ]
+}
