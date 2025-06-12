@@ -502,3 +502,5 @@ Now Claude Opus 4 and I build features in harmony. #Layer9 #RustWebDev"
 <sub>If you're still using Next.js after reading this... there's a support group on Thursdays</sub>
 
 <sub>"The best framework is the one that doesn't make Claude give up" - Ancient Alien Proverb</sub>
+
+<!-- TODO completed: "CRITICAL: Make counter example use Layer9, not raw DOM" on 2025-06-11 -->
