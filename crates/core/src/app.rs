@@ -10,7 +10,7 @@ pub trait Layer9App: L8::Architecture {
 }
 
 /// Global app instance (type-erased)
-/// Initialize and run the app
+/// Initialize and run the app with reactive rendering
 pub fn run_app<T: Layer9App + 'static>(app: T) {
     // Set panic hook for better error messages
     console_error_panic_hook::set_once();

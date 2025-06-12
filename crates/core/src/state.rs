@@ -235,11 +235,11 @@ pub fn use_reducer<S: 'static + Clone + Default, A: 'static>(
     (state.get().cloned(), dispatch)
 }
 
-// Helper hooks (these would be implemented elsewhere)
+// Helper hooks that integrate with the reactive system
 fn use_update() -> impl Fn() {
-    // Trigger component re-render
+    // Trigger component re-render using the reactive system
     || {
-        web_sys::console::log_1(&"Update triggered".into());
+        crate::reactive::queue_current_render();
     }
 }
 
@@ -248,9 +248,11 @@ where
     F: FnOnce() -> C,
     C: FnOnce() + 'static,
 {
-    // Run effect and return cleanup
-    let _cleanup = effect();
-    // Store cleanup for later
+    // Run effect and register cleanup with the reactive system
+    crate::reactive::run_current_effect(|| {
+        let cleanup = effect();
+        Box::new(cleanup) as Box<dyn FnOnce()>
+    });
 }
 
 // Make types cloneable for convenience

@@ -18,6 +18,22 @@ pub enum Element {
     Component(Box<dyn Component>),
 }
 
+impl std::fmt::Debug for Element {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Element::Text(text) => f.debug_tuple("Text").field(text).finish(),
+            Element::Node { tag, props, children } => {
+                f.debug_struct("Node")
+                    .field("tag", tag)
+                    .field("props", props)
+                    .field("children", children)
+                    .finish()
+            }
+            Element::Component(_) => f.debug_tuple("Component").field(&"dyn Component").finish(),
+        }
+    }
+}
+
 /// Component properties
 #[derive(Default, Clone)]
 pub struct Props {
@@ -25,6 +41,17 @@ pub struct Props {
     pub id: Option<String>,
     pub on_click: Option<Rc<dyn Fn()>>,
     pub attributes: Vec<(String, String)>,
+}
+
+impl std::fmt::Debug for Props {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Props")
+            .field("class", &self.class)
+            .field("id", &self.id)
+            .field("on_click", &self.on_click.as_ref().map(|_| "Fn()"))
+            .field("attributes", &self.attributes)
+            .finish()
+    }
 }
 
 // Make Component cloneable
@@ -113,21 +140,16 @@ impl Element {
     }
 }
 
-/// Type alias for update callback
-type UpdateCallback = Rc<RefCell<Option<Box<dyn Fn()>>>>;
-
-/// Reactive state hook with update callback
+/// Reactive state hook
 #[derive(Clone)]
 pub struct State<T> {
     value: Rc<RefCell<T>>,
-    update_callback: UpdateCallback,
 }
 
 impl<T: Clone> State<T> {
     pub fn new(initial: T) -> Self {
         State {
             value: Rc::new(RefCell::new(initial)),
-            update_callback: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -137,20 +159,8 @@ impl<T: Clone> State<T> {
 
     pub fn set(&self, new_value: T) {
         *self.value.borrow_mut() = new_value;
-        // Trigger re-render
-        self.trigger_update();
-    }
-
-    fn trigger_update(&self) {
-        if let Some(callback) = self.update_callback.borrow().as_ref() {
-            callback();
-        } else {
-            web_sys::console::log_1(&"State updated, re-render needed".into());
-        }
-    }
-
-    pub fn set_update_callback(&self, callback: Box<dyn Fn()>) {
-        *self.update_callback.borrow_mut() = Some(callback);
+        // Trigger automatic re-render through the reactive system
+        crate::reactive::queue_current_render();
     }
 }
 
@@ -195,6 +205,39 @@ macro_rules! view {
 
         let mut props = $crate::component::Props::default();
         props.class = Some($class.to_string());
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with onclick
+    (<$tag:ident onclick={$handler:expr}> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.on_click = Some(std::rc::Rc::new($handler));
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with class and onclick
+    (<$tag:ident class=$class:literal onclick={$handler:expr}> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.class = Some($class.to_string());
+        props.on_click = Some(std::rc::Rc::new($handler));
 
         let children = vec![$($crate::view!($children)),*];
 
