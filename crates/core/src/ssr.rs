@@ -22,8 +22,8 @@ pub struct SSRContext {
 /// Trait for SSR-capable components
 pub trait SSRComponent: Component {
     /// Server-side data fetching
-    async fn get_server_props(_ctx: &SSRContext) -> Result<serde_json::Value, String> {
-        Ok(serde_json::json!({}))
+    fn get_server_props(_ctx: &SSRContext) -> impl std::future::Future<Output = Result<serde_json::Value, String>> + Send {
+        async { Ok(serde_json::json!({})) }
     }
 
     /// Render to HTML string

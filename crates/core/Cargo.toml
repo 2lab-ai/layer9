@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 # Layer system
 downcast-rs = "1.2"
-typemap = "0.3"
 
 # Web
 wasm-bindgen = "0.2"
@@ -82,6 +81,9 @@ sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "json"
 uuid = { version = "1", features = ["v4"], optional = true }
 
 [dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
 
 [features]

@@ -522,6 +522,7 @@ impl<C: DatabaseConnection> ConnectionPool<C> {
 /// PostgreSQL connection implementation (client-side via HTTP)
 #[derive(Clone)]
 pub struct PostgresConnection {
+    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
     api_url: String,
     auth_token: Option<String>,
 }
