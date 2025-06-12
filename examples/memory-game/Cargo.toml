@@ -1,0 +1,21 @@
+[package]
+name = "layer9-example-memory-game"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+layer9-core = { path = "../../crates/core" }
+wasm-bindgen = "0.2"
+wee_alloc = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["console", "Window"] }
+rand = "0.8"
+getrandom = { version = "0.2", features = ["js"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"

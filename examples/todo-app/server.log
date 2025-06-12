@@ -1,0 +1,15 @@
+::1 - - [12/Jun/2025 23:28:13] "GET / HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:28:13] "GET /pkg/layer9_example_todo.js HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:28:13] "GET /pkg/layer9_example_todo_bg.wasm HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:28:13] code 404, message File not found
+::1 - - [12/Jun/2025 23:28:13] "GET /favicon.ico HTTP/1.1" 404 -
+::1 - - [12/Jun/2025 23:28:41] "GET / HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:28:41] "GET /pkg/layer9_example_todo.js HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:28:41] "GET /pkg/layer9_example_todo_bg.wasm HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:28:41] code 404, message File not found
+::1 - - [12/Jun/2025 23:28:41] "GET /favicon.ico HTTP/1.1" 404 -
+::1 - - [12/Jun/2025 23:29:21] "GET / HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:29:21] "GET /pkg/layer9_example_todo.js HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:29:21] "GET /pkg/layer9_example_todo_bg.wasm HTTP/1.1" 200 -
+::1 - - [12/Jun/2025 23:29:21] code 404, message File not found
+::1 - - [12/Jun/2025 23:29:21] "GET /favicon.ico HTTP/1.1" 404 -

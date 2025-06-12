@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "errors": [],
+  "warnings": [],
+  "logs": [
+    {
+      "type": "log",
+      "text": "Layer9 Todo App starting..."
+    },
+    {
+      "type": "log",
+      "text": "Layer9 Todo App mounted successfully!"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (File not found)"
+    }
+  ]
+}

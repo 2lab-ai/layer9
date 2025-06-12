@@ -1,0 +1,25 @@
+[package]
+name = "layer9-example-todo"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "simple"
+path = "src/simple.rs"
+
+[dependencies]
+layer9-framework = { path = "../.." }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Document", "Window", "Element", "HtmlElement", "HtmlInputElement", "KeyboardEvent", "MouseEvent"] }
+wee_alloc = "0.4.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.17", features = ["v4", "js"] }
+js-sys = "0.3"
+
+[profile.release]
+opt-level = "z"
+lto = true

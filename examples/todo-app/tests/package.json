@@ -1,0 +1,13 @@
+{
+  "name": "todo-app-tests",
+  "version": "1.0.0",
+  "description": "Browser tests for Layer9 Todo App",
+  "scripts": {
+    "test": "node puppeteer-tests.js",
+    "test:playwright": "node playwright-tests.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.6.0",
+    "playwright": "^1.40.0"
+  }
+}
