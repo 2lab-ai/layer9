@@ -11,7 +11,7 @@ use wasm_bindgen_futures::spawn_local;
 use crate::component::{Component, Element, Props, use_state};
 use crate::error::ErrorBoundary;
 use crate::hooks::use_effect;
-use crate::reactive::queue_current_render;
+use crate::reactive_v2::queue_current_render;
 
 /// Loading state for async components
 #[derive(Clone, Debug)]

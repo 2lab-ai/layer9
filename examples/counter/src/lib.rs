@@ -29,11 +29,13 @@ impl Component for CounterApp {
         
         // Create increment and decrement callbacks
         let increment = {
+            let count = count;
             let set_count = set_count.clone();
             move || set_count(count + 1)
         };
         
         let decrement = {
+            let count = count;
             let set_count = set_count.clone();
             move || set_count(count - 1)
         };

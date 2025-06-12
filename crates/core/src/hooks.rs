@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::reactive::{get_current_component, queue_current_render, run_current_effect};
+use crate::reactive_v2::{get_current_component, run_current_effect};
 
 thread_local! {
     /// Global hook state storage per component
@@ -74,9 +74,13 @@ pub fn use_state<T: Clone + 'static>(initial: T) -> (T, impl Fn(T) + Clone) {
     let value = state.borrow().clone();
     let state_clone = state.clone();
     
+    // Capture the component ID at hook creation time
+    let component_id = get_current_component().expect("use_state must be called during render");
+    
     let set_state = move |new_value: T| {
         *state_clone.borrow_mut() = new_value;
-        queue_current_render();
+        // Use the captured component ID to queue render
+        crate::reactive_v2::queue_component_render(component_id);
     };
     
     (value, set_state)
@@ -101,12 +105,15 @@ pub fn use_reducer<S: Clone + 'static, A: 'static>(
     let current_state = reducer_state.borrow().state.clone();
     let reducer_state_clone = reducer_state.clone();
     
+    // Capture the component ID at hook creation time
+    let component_id = get_current_component().expect("use_reducer must be called during render");
+    
     let dispatch = move |action: A| {
         let mut state = reducer_state_clone.borrow_mut();
         let new_state = (state.reducer)(&state.state, action);
         state.state = new_state;
         drop(state); // Release borrow before re-render
-        queue_current_render();
+        crate::reactive_v2::queue_component_render(component_id);
     };
     
     (current_state, dispatch)

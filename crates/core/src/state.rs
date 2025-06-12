@@ -240,7 +240,7 @@ pub fn use_reducer<S: 'static + Clone + Default, A: 'static>(
 fn use_update() -> impl Fn() {
     // Trigger component re-render using the reactive system
     || {
-        crate::reactive::queue_current_render();
+        crate::reactive_v2::queue_current_render();
     }
 }
 

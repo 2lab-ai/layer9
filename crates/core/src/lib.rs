@@ -32,7 +32,8 @@ pub mod image;
 pub mod layers;
 pub mod middleware;
 pub mod monitoring;
-pub mod reactive;
+// pub mod reactive; // Using v2 to fix borrowing issues
+pub mod reactive_v2;
 pub mod router;
 pub mod router_v2;
 pub mod security;
@@ -72,7 +73,7 @@ pub mod prelude {
     pub use crate::layers::*;
     pub use crate::middleware::{Context, Middleware, MiddlewareStack};
     pub use crate::monitoring::{use_analytics, use_metrics, use_performance};
-    pub use crate::reactive::{init_renderer, mount, queue_current_render};
+    pub use crate::reactive_v2::{init_renderer, mount, queue_current_render};
     pub use crate::router::{Page, Route, RouteHandler};
     pub use crate::router_v2::{init_router, navigate, route, use_route, use_router, Link};
     pub use crate::security::{use_csrf_token, use_security, XssProtection};

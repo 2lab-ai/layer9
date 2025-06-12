@@ -160,7 +160,7 @@ impl<T: Clone> State<T> {
     pub fn set(&self, new_value: T) {
         *self.value.borrow_mut() = new_value;
         // Trigger automatic re-render through the reactive system
-        crate::reactive::queue_current_render();
+        crate::reactive_v2::queue_current_render();
     }
 }
 

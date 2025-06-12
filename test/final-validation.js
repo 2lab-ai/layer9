@@ -59,11 +59,28 @@ async function validateLayer9() {
         // 2. WASM Test
         console.log('2️⃣  Testing: WASM Module');
         try {
+            // Debug: Take screenshot and log page content
+            const content = await page.content();
+            if (content.includes('404') || content.includes('Not Found')) {
+                throw new Error('Page returned 404');
+            }
+            
             await page.waitForSelector('.layer9-app', { timeout: 5000 });
+            
+            // Debug: Check if WASM loaded
+            const hasWasm = await page.evaluate(() => {
+                return typeof WebAssembly !== 'undefined';
+            });
+            
+            if (!hasWasm) {
+                throw new Error('WebAssembly not supported');
+            }
+            
             if (errors.length === 0) {
                 console.log('   ✅ WASM initialized without errors');
                 tests.passed++;
             } else {
+                console.log(`   ⚠️  Console errors: ${errors.join(', ')}`);
                 throw new Error(`${errors.length} errors found`);
             }
         } catch (e) {
@@ -74,20 +91,23 @@ async function validateLayer9() {
         // 3. Functionality Test
         console.log('3️⃣  Testing: Core Functionality');
         try {
+            // Wait for counter to be ready
+            await page.waitForSelector('.counter-value', { timeout: 3000 });
+            
             // Test increment
             await page.click('button.btn-primary');
-            await new Promise(r => setTimeout(r, 100));
-            const afterInc = await page.$eval('#counter-display', el => el.textContent);
+            await new Promise(r => setTimeout(r, 200));
+            const afterInc = await page.$eval('.counter-value', el => el.textContent);
             
             // Test decrement
             await page.click('button.btn-secondary');
-            await new Promise(r => setTimeout(r, 100));
-            const afterDec = await page.$eval('#counter-display', el => el.textContent);
+            await new Promise(r => setTimeout(r, 200));
+            const afterDec = await page.$eval('.counter-value', el => el.textContent);
             
             // Test reset
             await page.click('button.btn-warning');
-            await new Promise(r => setTimeout(r, 100));
-            const afterReset = await page.$eval('#counter-display', el => el.textContent);
+            await new Promise(r => setTimeout(r, 200));
+            const afterReset = await page.$eval('.counter-value', el => el.textContent);
             
             if (afterInc === 'Count: 1' && afterDec === 'Count: 0' && afterReset === 'Count: 0') {
                 console.log('   ✅ All functions work correctly');
