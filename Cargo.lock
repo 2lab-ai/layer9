@@ -1340,6 +1340,7 @@ name = "layer9-example-counter"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "layer9-core",
  "serde",
  "wasm-bindgen",
  "web-sys",
