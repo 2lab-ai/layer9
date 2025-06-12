@@ -10,16 +10,16 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use tokio::sync::broadcast;
 use tower::ServiceBuilder;
-use tower_http::{
-    cors::CorsLayer,
-    services::ServeDir,
-    trace::TraceLayer,
-};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Layer9 Development Server - Pure Rust, No Python")]
+#[command(
+    author,
+    version,
+    about = "Layer9 Development Server - Pure Rust, No Python"
+)]
 struct Args {
     /// Directory to serve
     #[arg(short, long, default_value = ".")]
@@ -46,7 +46,7 @@ async fn main() {
         .init();
 
     let args = Args::parse();
-    
+
     // Create broadcast channel for hot reload
     let (reload_tx, _) = broadcast::channel::<()>(100);
     let reload_tx_clone = reload_tx.clone();
@@ -65,7 +65,7 @@ async fn main() {
     // Run the server
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    
+
     info!("🚀 Layer9 Dev Server (Rust Edition)");
     info!("📁 Serving: {}", args.dir.display());
     info!("🌐 Listening on: http://localhost:{}", args.port);
@@ -92,23 +92,15 @@ fn create_app(dir: PathBuf, reload_tx: broadcast::Sender<()>, hot_reload: bool) 
             .layer(
                 ServiceBuilder::new()
                     .layer(TraceLayer::new_for_http())
-                    .layer(
-                        CorsLayer::permissive()
-                            .allow_credentials(false)
-                    ),
+                    .layer(CorsLayer::permissive().allow_credentials(false)),
             )
             .with_state(reload_tx)
     } else {
-        Router::new()
-            .nest_service("/", serve_dir)
-            .layer(
-                ServiceBuilder::new()
-                    .layer(TraceLayer::new_for_http())
-                    .layer(
-                        CorsLayer::permissive()
-                            .allow_credentials(false)
-                    ),
-            )
+        Router::new().nest_service("/", serve_dir).layer(
+            ServiceBuilder::new()
+                .layer(TraceLayer::new_for_http())
+                .layer(CorsLayer::permissive().allow_credentials(false)),
+        )
     }
 }
 
@@ -121,7 +113,7 @@ async fn websocket_handler(
 
 async fn handle_socket(mut socket: WebSocket, reload_tx: broadcast::Sender<()>) {
     let mut rx = reload_tx.subscribe();
-    
+
     // Send initial connection message
     if socket
         .send(axum::extract::ws::Message::Text("connected".to_string()))
@@ -145,7 +137,7 @@ async fn handle_socket(mut socket: WebSocket, reload_tx: broadcast::Sender<()>) 
 
 async fn watch_files(dir: PathBuf, reload_tx: broadcast::Sender<()>) {
     let (tx, rx) = std::sync::mpsc::channel();
-    
+
     let mut watcher = RecommendedWatcher::new(
         move |res: Result<Event, notify::Error>| {
             if let Ok(event) = res {
@@ -159,12 +151,12 @@ async fn watch_files(dir: PathBuf, reload_tx: broadcast::Sender<()>) {
     .unwrap();
 
     watcher.watch(&dir, RecursiveMode::Recursive).unwrap();
-    
+
     info!("👁️  Watching for file changes in: {}", dir.display());
 
     // Debounce file changes
     let mut last_reload = std::time::Instant::now();
-    
+
     loop {
         if rx.recv().is_ok() {
             let now = std::time::Instant::now();
@@ -188,7 +180,7 @@ async fn watch_files(dir: PathBuf, reload_tx: broadcast::Sender<()>) {
 //         let (tx, _) = broadcast::channel(100);
 //         let app = create_app(PathBuf::from("."), tx, false);
 //         let server = TestServer::new(app).unwrap();
-        
+
 //         let response = server.get("/").await;
 //         assert_eq!(response.status_code(), StatusCode::OK);
 //     }

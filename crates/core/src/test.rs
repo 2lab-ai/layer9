@@ -1,7 +1,7 @@
 //! Testing Framework - L7/L8
 
 #[allow(unused_imports)] // These are used in test macros and examples
-use crate::component::{Component, Element, Props, use_state};
+use crate::component::{use_state, Component, Element, Props};
 use std::future::Future;
 #[allow(unused_imports)] // Used in test macros
 use std::panic;

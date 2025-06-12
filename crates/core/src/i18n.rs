@@ -134,10 +134,7 @@ impl TranslationCatalog {
 
     pub fn merge(&mut self, other: TranslationCatalog) {
         for (locale, messages) in other.locales {
-            self.locales
-                .entry(locale)
-                .or_default()
-                .extend(messages);
+            self.locales.entry(locale).or_default().extend(messages);
         }
     }
 }
@@ -288,11 +285,14 @@ pub fn use_i18n() -> I18n {
     // First check if initialized
     let locale = I18N.with(|i18n| {
         let borrowed = i18n.borrow();
-        borrowed.as_ref().map(|ctx| ctx.locale()).unwrap_or_else(|| {
-            panic!("i18n not initialized. Call init_i18n() first.");
-        })
+        borrowed
+            .as_ref()
+            .map(|ctx| ctx.locale())
+            .unwrap_or_else(|| {
+                panic!("i18n not initialized. Call init_i18n() first.");
+            })
     });
-    
+
     I18n {
         locale,
         set_locale: Box::new(move |locale| {
@@ -304,17 +304,26 @@ pub fn use_i18n() -> I18n {
         }),
         t: Box::new(move |key| {
             I18N.with(|i18n| {
-                i18n.borrow().as_ref().map(|ctx| ctx.t(key)).unwrap_or_else(|| key.to_string())
+                i18n.borrow()
+                    .as_ref()
+                    .map(|ctx| ctx.t(key))
+                    .unwrap_or_else(|| key.to_string())
             })
         }),
         translate: Box::new(move |key, args| {
             I18N.with(|i18n| {
-                i18n.borrow().as_ref().map(|ctx| ctx.translate(key, args)).unwrap_or_else(|| key.to_string())
+                i18n.borrow()
+                    .as_ref()
+                    .map(|ctx| ctx.translate(key, args))
+                    .unwrap_or_else(|| key.to_string())
             })
         }),
         plural: Box::new(move |key, count, args| {
             I18N.with(|i18n| {
-                i18n.borrow().as_ref().map(|ctx| ctx.plural(key, count, args)).unwrap_or_else(|| key.to_string())
+                i18n.borrow()
+                    .as_ref()
+                    .map(|ctx| ctx.plural(key, count, args))
+                    .unwrap_or_else(|| key.to_string())
             })
         }),
     }
@@ -402,7 +411,8 @@ impl DateTimeFormat {
     pub fn date(&self, timestamp: f64) -> String {
         // Use Intl.DateTimeFormat
         let date = js_sys::Date::new(&JsValue::from_f64(timestamp));
-        date.to_locale_date_string(self.locale.code(), &JsValue::NULL).into()
+        date.to_locale_date_string(self.locale.code(), &JsValue::NULL)
+            .into()
     }
 
     pub fn time(&self, timestamp: f64) -> String {
@@ -412,7 +422,8 @@ impl DateTimeFormat {
 
     pub fn date_time(&self, timestamp: f64) -> String {
         let date = js_sys::Date::new(&JsValue::from_f64(timestamp));
-        date.to_locale_string(self.locale.code(), &JsValue::NULL).into()
+        date.to_locale_string(self.locale.code(), &JsValue::NULL)
+            .into()
     }
 
     pub fn relative(&self, timestamp: f64) -> String {

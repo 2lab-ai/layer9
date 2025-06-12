@@ -10,7 +10,10 @@ pub trait ServerFunction {
 
     fn endpoint(&self) -> &'static str;
 
-    fn call(&self, req: Self::Request) -> impl std::future::Future<Output = Result<Self::Response, ServerError>>;
+    fn call(
+        &self,
+        req: Self::Request,
+    ) -> impl std::future::Future<Output = Result<Self::Response, ServerError>>;
 }
 
 #[derive(Debug)]

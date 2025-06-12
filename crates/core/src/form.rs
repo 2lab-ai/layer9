@@ -143,7 +143,7 @@ impl<T: Clone + 'static> Form<T> {
 /// Validation rules
 pub mod validators {
     use super::ValidatorFn;
-    
+
     pub fn required(value: &str) -> Option<String> {
         if value.trim().is_empty() {
             Some("This field is required".to_string())
@@ -192,9 +192,7 @@ pub mod validators {
         }
     }
 
-    pub fn compose(
-        validators: Vec<ValidatorFn>,
-    ) -> impl Fn(&str) -> Vec<String> {
+    pub fn compose(validators: Vec<ValidatorFn>) -> impl Fn(&str) -> Vec<String> {
         move |value: &str| {
             validators
                 .iter()

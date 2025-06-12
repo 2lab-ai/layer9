@@ -383,7 +383,7 @@ impl<C: DatabaseConnection> Migrator<C> {
             .conn
             .query_many("SELECT version FROM _migrations ORDER BY version", vec![])
             .await?;
-        
+
         let applied: Vec<i32> = applied_values
             .into_iter()
             .filter_map(|v| {

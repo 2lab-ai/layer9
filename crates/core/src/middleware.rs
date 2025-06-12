@@ -144,16 +144,12 @@ impl MiddlewareStack {
             } else {
                 // Simple solution: just run middleware sequentially
                 let middleware = &self.middlewares[index];
-                let placeholder_next: Next = Box::new(|| {
-                    Box::pin(async {
-                        Ok(Response::new())
-                    })
-                });
-                
+                let placeholder_next: Next = Box::new(|| Box::pin(async { Ok(Response::new()) }));
+
                 // Run this middleware
                 let result = middleware.handle(ctx, placeholder_next).await?;
                 ctx.response = result;
-                
+
                 // Continue to next middleware
                 self.run_middleware(index + 1, ctx).await
             }

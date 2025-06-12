@@ -1,0 +1,12 @@
+I need you to implement the following TODO from the Layer9 framework project: "CRITICAL: Make counter example use Layer9, not raw DOM"
+
+
+The counter example currently uses raw DOM manipulation. You need to:
+1. Read the current counter example at examples/counter/src/lib.rs
+2. Understand the Layer9 component system by examining crates/core/src/component.rs and crates/core/src/state.rs
+3. Rewrite the counter example to use Layer9 components, state hooks, and event handling
+4. Ensure it still compiles to WASM and works correctly
+5. The counter should increment/decrement when buttons are clicked
+6. Use Layer9's html! macro and component system instead of raw DOM manipulation
+
+Make sure to maintain the same functionality while demonstrating proper Layer9 framework usage.

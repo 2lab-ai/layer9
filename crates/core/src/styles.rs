@@ -45,7 +45,8 @@ impl StyleBuilder {
     }
 
     pub fn justify_between(mut self) -> Self {
-        self.classes.push("justify-content: space-between".to_string());
+        self.classes
+            .push("justify-content: space-between".to_string());
         self
     }
 
@@ -187,7 +188,8 @@ impl StyleBuilder {
 
     pub fn hover_bg_gray_100(mut self) -> Self {
         // Note: Hover states need special handling in WASM
-        self.classes.push("hover:background-color: #f3f4f6".to_string());
+        self.classes
+            .push("hover:background-color: #f3f4f6".to_string());
         self
     }
 

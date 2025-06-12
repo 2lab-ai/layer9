@@ -102,8 +102,7 @@ impl AppBuilder {
             type State = ();
             type Action = ();
 
-            fn reduce(_state: &Self::State, _action: Self::Action) -> Self::State {
-            }
+            fn reduce(_state: &Self::State, _action: Self::Action) -> Self::State {}
         }
 
         BuiltApp {
