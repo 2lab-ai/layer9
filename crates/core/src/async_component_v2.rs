@@ -78,7 +78,15 @@ impl<T: Clone + 'static> AsyncData<T> {
             state: Rc::new(RefCell::new(AsyncState::Loading)),
         }
     }
-    
+}
+
+impl<T: Clone + 'static> Default for AsyncData<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Clone + 'static> AsyncData<T> {
     pub fn load<F>(&self, f: F)
     where
         F: FnOnce() + 'static,

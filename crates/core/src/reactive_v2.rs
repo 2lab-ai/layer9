@@ -9,9 +9,11 @@ use web_sys::{Element as DomElement, Node};
 
 use crate::component::{Component, Element};
 
+type PendingEffect = (ComponentId, Box<dyn FnOnce() -> EffectCleanup>);
+
 thread_local! {
     static RENDERER: RefCell<Option<Renderer>> = const { RefCell::new(None) };
-    static PENDING_EFFECTS: RefCell<Vec<(ComponentId, Box<dyn FnOnce() -> EffectCleanup>)>> = RefCell::new(Vec::new());
+    static PENDING_EFFECTS: RefCell<Vec<PendingEffect>> = RefCell::new(Vec::new());
 }
 
 /// Initialize the global renderer

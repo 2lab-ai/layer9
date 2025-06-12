@@ -16,7 +16,7 @@ thread_local! {
     static HOOK_STATE: RefCell<HashMap<u32, ComponentHooks>> = RefCell::new(HashMap::new());
     
     /// Current hook index for the executing component
-    static CURRENT_HOOK_INDEX: RefCell<usize> = RefCell::new(0);
+    static CURRENT_HOOK_INDEX: RefCell<usize> = const { RefCell::new(0) };
 }
 
 /// Storage for all hooks of a component
@@ -86,6 +86,9 @@ pub fn use_state<T: Clone + 'static>(initial: T) -> (T, impl Fn(T) + Clone) {
     (value, set_state)
 }
 
+/// Reducer function type
+type ReducerFn<S, A> = dyn Fn(&S, A) -> S;
+
 /// State hook with reducer pattern
 pub fn use_reducer<S: Clone + 'static, A: 'static>(
     reducer: impl Fn(&S, A) -> S + 'static,
@@ -94,7 +97,7 @@ pub fn use_reducer<S: Clone + 'static, A: 'static>(
     #[derive(Clone)]
     struct ReducerState<S, A> {
         state: S,
-        reducer: Rc<dyn Fn(&S, A) -> S>,
+        reducer: Rc<ReducerFn<S, A>>,
     }
     
     let reducer_state = use_hook_state(|| ReducerState {
@@ -146,7 +149,7 @@ where
         Some(old_deps) => {
             // Compare dependencies
             old_deps.len() != new_deps.len() || 
-            !deps.deps_equal(&**old_deps)
+            !deps.deps_equal(old_deps)
         }
     };
     
@@ -244,6 +247,12 @@ impl<T: Clone + 'static> Context<T> {
             id: TypeId::of::<T>(),
             _phantom: std::marker::PhantomData,
         }
+    }
+}
+
+impl<T: Clone + 'static> Default for Context<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -438,9 +447,9 @@ pub fn use_counter(initial: i32) -> (i32, impl Fn() + Clone, impl Fn() + Clone) 
 }
 
 /// Custom hook example: usePrevious  
-pub fn use_previous<T: Clone + PartialEq + 'static>(value: T) -> Option<T>
+pub fn use_previous<T>(value: T) -> Option<T>
 where
-    T: DepsList,
+    T: Clone + PartialEq + 'static + DepsList,
 {
     let prev_ref = use_ref(None::<T>);
     let prev_value = prev_ref.borrow().clone();
@@ -459,9 +468,9 @@ where
 }
 
 /// Custom hook example: useDebounce
-pub fn use_debounce<T: Clone + PartialEq + 'static>(value: T, delay_ms: u32) -> T
+pub fn use_debounce<T>(value: T, delay_ms: u32) -> T
 where
-    T: DepsList,
+    T: Clone + PartialEq + 'static + DepsList,
 {
     let (debounced, set_debounced) = use_state(value.clone());
     
