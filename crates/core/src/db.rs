@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 
 /// Database connection trait
+#[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
 pub trait DatabaseConnection: 'static {
     async fn execute(&self, query: &str, params: Vec<Value>) -> Result<QueryResult, DbError>;
@@ -17,6 +18,76 @@ pub trait DatabaseConnection: 'static {
     async fn begin_transaction(&self) -> Result<String, DbError>;
     async fn commit_transaction(&self, tx_id: &str) -> Result<(), DbError>;
     async fn rollback_transaction(&self, tx_id: &str) -> Result<(), DbError>;
+}
+
+/// Database connection trait (server-side with Send)
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait]
+pub trait DatabaseConnection: Send + Sync + 'static {
+    async fn execute(&self, query: &str, params: Vec<Value>) -> Result<QueryResult, DbError>;
+    async fn query_one(&self, query: &str, params: Vec<Value>) -> Result<Value, DbError>;
+    async fn query_many(&self, query: &str, params: Vec<Value>) -> Result<Vec<Value>, DbError>;
+    async fn begin_transaction(&self) -> Result<String, DbError>;
+    async fn commit_transaction(&self, tx_id: &str) -> Result<(), DbError>;
+    async fn rollback_transaction(&self, tx_id: &str) -> Result<(), DbError>;
+}
+
+/// Implement DatabaseConnection for Box<dyn DatabaseConnection> (WASM)
+#[cfg(target_arch = "wasm32")]
+#[async_trait(?Send)]
+impl DatabaseConnection for Box<dyn DatabaseConnection> {
+    async fn execute(&self, query: &str, params: Vec<Value>) -> Result<QueryResult, DbError> {
+        self.as_ref().execute(query, params).await
+    }
+    
+    async fn query_one(&self, query: &str, params: Vec<Value>) -> Result<Value, DbError> {
+        self.as_ref().query_one(query, params).await
+    }
+    
+    async fn query_many(&self, query: &str, params: Vec<Value>) -> Result<Vec<Value>, DbError> {
+        self.as_ref().query_many(query, params).await
+    }
+    
+    async fn begin_transaction(&self) -> Result<String, DbError> {
+        self.as_ref().begin_transaction().await
+    }
+    
+    async fn commit_transaction(&self, tx_id: &str) -> Result<(), DbError> {
+        self.as_ref().commit_transaction(tx_id).await
+    }
+    
+    async fn rollback_transaction(&self, tx_id: &str) -> Result<(), DbError> {
+        self.as_ref().rollback_transaction(tx_id).await
+    }
+}
+
+/// Implement DatabaseConnection for Box<dyn DatabaseConnection> (Server)
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait]
+impl DatabaseConnection for Box<dyn DatabaseConnection> {
+    async fn execute(&self, query: &str, params: Vec<Value>) -> Result<QueryResult, DbError> {
+        self.as_ref().execute(query, params).await
+    }
+    
+    async fn query_one(&self, query: &str, params: Vec<Value>) -> Result<Value, DbError> {
+        self.as_ref().query_one(query, params).await
+    }
+    
+    async fn query_many(&self, query: &str, params: Vec<Value>) -> Result<Vec<Value>, DbError> {
+        self.as_ref().query_many(query, params).await
+    }
+    
+    async fn begin_transaction(&self) -> Result<String, DbError> {
+        self.as_ref().begin_transaction().await
+    }
+    
+    async fn commit_transaction(&self, tx_id: &str) -> Result<(), DbError> {
+        self.as_ref().commit_transaction(tx_id).await
+    }
+    
+    async fn rollback_transaction(&self, tx_id: &str) -> Result<(), DbError> {
+        self.as_ref().rollback_transaction(tx_id).await
+    }
 }
 
 /// Query result
@@ -469,6 +540,7 @@ impl PostgresConnection {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
 impl DatabaseConnection for PostgresConnection {
     async fn execute(&self, query: &str, params: Vec<Value>) -> Result<QueryResult, DbError> {
@@ -613,16 +685,90 @@ impl DatabaseConnection for PostgresConnection {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait]
+impl DatabaseConnection for PostgresConnection {
+    async fn execute(&self, _query: &str, _params: Vec<Value>) -> Result<QueryResult, DbError> {
+        Err(DbError {
+            kind: DbErrorKind::Connection,
+            message: "PostgresConnection not implemented for server-side. Use SqlxConnection instead.".to_string(),
+        })
+    }
+
+    async fn query_one(&self, _query: &str, _params: Vec<Value>) -> Result<Value, DbError> {
+        Err(DbError {
+            kind: DbErrorKind::Connection,
+            message: "PostgresConnection not implemented for server-side. Use SqlxConnection instead.".to_string(),
+        })
+    }
+
+    async fn query_many(&self, _query: &str, _params: Vec<Value>) -> Result<Vec<Value>, DbError> {
+        Err(DbError {
+            kind: DbErrorKind::Connection,
+            message: "PostgresConnection not implemented for server-side. Use SqlxConnection instead.".to_string(),
+        })
+    }
+
+    async fn begin_transaction(&self) -> Result<String, DbError> {
+        Err(DbError {
+            kind: DbErrorKind::Connection,
+            message: "PostgresConnection not implemented for server-side. Use SqlxConnection instead.".to_string(),
+        })
+    }
+
+    async fn commit_transaction(&self, _tx_id: &str) -> Result<(), DbError> {
+        Err(DbError {
+            kind: DbErrorKind::Connection,
+            message: "PostgresConnection not implemented for server-side. Use SqlxConnection instead.".to_string(),
+        })
+    }
+
+    async fn rollback_transaction(&self, _tx_id: &str) -> Result<(), DbError> {
+        Err(DbError {
+            kind: DbErrorKind::Connection,
+            message: "PostgresConnection not implemented for server-side. Use SqlxConnection instead.".to_string(),
+        })
+    }
+}
+
 /// Hook for database operations
+#[cfg(not(target_arch = "wasm32"))]
+pub fn use_db() -> Box<dyn DatabaseConnection> {
+    #[cfg(feature = "ssr")]
+    {
+        match crate::db_sqlx::use_db_server() {
+            Ok(conn) => Box::new(conn),
+            Err(_) => {
+                // Fallback to HTTP connection if SQLx is not available
+                let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+                Box::new(PostgresConnection::new(api_url).with_auth("dummy-token"))
+            }
+        }
+    }
+    #[cfg(not(feature = "ssr"))]
+    {
+        let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+        Box::new(PostgresConnection::new(api_url).with_auth("dummy-token"))
+    }
+}
+
+/// Hook for database operations (WASM/client-side)
+#[cfg(target_arch = "wasm32")]
 pub fn use_db() -> PostgresConnection {
-    // In real app, this would get from context
-    // For now, create a new connection
-    let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+    let api_url = crate::env::env_or("DATABASE_API_URL", "/api/db");
     PostgresConnection::new(api_url).with_auth("dummy-token")
 }
 
-/// Hook for repository
+/// Hook for repository (client-side WASM)
+#[cfg(target_arch = "wasm32")]
 pub fn use_repository<M: Model>() -> Repository<M, PostgresConnection> {
+    let conn = use_db();
+    Repository::new(conn)
+}
+
+/// Hook for repository (server-side)
+#[cfg(not(target_arch = "wasm32"))]
+pub fn use_repository<M: Model>() -> Repository<M, Box<dyn DatabaseConnection>> {
     let conn = use_db();
     Repository::new(conn)
 }

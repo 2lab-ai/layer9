@@ -28,7 +28,7 @@ impl Component for CounterComponent {
         let count_value = self.count.get();
 
         // Create styled container using Layer9's UI components
-        Card::new()
+        let card = Card::new()
             .class("layer9-app")
             .children(vec![
                 // Title
@@ -129,8 +129,10 @@ impl Component for CounterComponent {
                         Element::Text(" - A Rust Web Framework".to_string()),
                     ],
                 },
-            ])
-            .render()
+            ]);
+        
+        // Return the Card component wrapped in an Element
+        Element::Component(Box::new(card))
     }
 }
 

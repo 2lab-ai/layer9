@@ -126,8 +126,17 @@ class Layer9HealthCheck {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
             
-            this.serverProcess = spawn('python3', ['-m', 'http.server', this.port.toString()], {
-                cwd: path.join(process.cwd(), 'examples', 'counter'),
+            this.serverProcess = spawn('cargo', [
+                'run',
+                '--manifest-path',
+                'crates/layer9-server/Cargo.toml',
+                '--',
+                '--dir',
+                'examples/counter',
+                '--port',
+                this.port.toString()
+            ], {
+                cwd: process.cwd(),
                 stdio: 'pipe'
             });
 

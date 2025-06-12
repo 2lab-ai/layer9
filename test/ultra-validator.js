@@ -110,7 +110,7 @@ class UltraValidator {
         const check = await this.execute('lsof -i :8080');
         if (check.stdout) {
             this.log('Port still occupied, trying nuclear option', 'fix');
-            await this.execute('killall -9 python3 python node');
+            await this.execute('killall -9 cargo node 2>/dev/null || true');
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
         
@@ -190,23 +190,21 @@ class UltraValidator {
                 args: [
                     'run',
                     '--manifest-path',
-                    path.join(process.cwd(), 'crates', 'layer9-server', 'Cargo.toml'),
+                    'crates/layer9-server/Cargo.toml',
                     '--',
                     '--dir',
-                    path.join(process.cwd(), 'examples', 'counter'),
+                    'examples/counter',
                     '--port',
                     '8080'
                 ],
                 name: 'Layer9 Rust Server'
             },
-            { cmd: 'python3', args: ['-m', 'http.server', '8080'], name: 'python3' },
-            { cmd: 'python', args: ['-m', 'SimpleHTTPServer', '8080'], name: 'python' },
-            { cmd: 'npx', args: ['http-server', '-p', '8080'], name: 'npx' }
+            { cmd: 'npx', args: ['http-server', '-p', '8080'], name: 'npx http-server' }
         ];
         
         for (const option of serverOptions) {
             try {
-                // Use root directory for Rust server, examples/counter for others
+                // Use root directory for Rust server, examples/counter for npx
                 const cwd = option.name === 'Layer9 Rust Server' 
                     ? process.cwd() 
                     : path.join(process.cwd(), 'examples', 'counter');

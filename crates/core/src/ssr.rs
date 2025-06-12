@@ -78,8 +78,30 @@ fn html_escape(text: &str) -> String {
         .replace('\'', "&#39;")
 }
 
+/// SSR Configuration
+pub struct SSRConfig {
+    pub wasm_dir: String,
+    pub bundle_name: String,
+    pub static_dir: Option<String>,
+}
+
+impl Default for SSRConfig {
+    fn default() -> Self {
+        SSRConfig {
+            wasm_dir: "pkg".to_string(),
+            bundle_name: "layer9_bundle".to_string(),
+            static_dir: Some("static".to_string()),
+        }
+    }
+}
+
 /// SSR App trait
-pub trait SSRApp: Layer9App {
+pub trait SSRApp: Layer9App + Sync {
+    /// Get SSR configuration
+    fn ssr_config(&self) -> SSRConfig {
+        SSRConfig::default()
+    }
+    
     /// Get HTML template
     fn html_template(&self) -> &'static str {
         r#"<!DOCTYPE html>
@@ -94,9 +116,11 @@ pub trait SSRApp: Layer9App {
 <body>
     <div id="layer9-root">{content}</div>
     <script type="module">
-        import init from '/layer9_bundle.js';
-        init().then(() => {
-            window.__Layer9_HYDRATE__();
+        import init from '/{wasm_dir}/{bundle_name}.js';
+        init('/{wasm_dir}/{bundle_name}_bg.wasm').then(() => {
+            if (window.__Layer9_HYDRATE__) {
+                window.__Layer9_HYDRATE__();
+            }
         });
     </script>
 </body>
@@ -104,18 +128,24 @@ pub trait SSRApp: Layer9App {
     }
 
     /// Render page on server
-    async fn render_page(&self, route: &str, ctx: SSRContext) -> Result<String, StatusCode> {
-        // Find matching route
-        let routes = self.routes();
-        let route_match = routes.iter().find(|r| r.path == route);
+    fn render_page(
+        &self,
+        route: &str,
+        ctx: SSRContext,
+    ) -> impl std::future::Future<Output = Result<String, StatusCode>> + Send {
+        async move {
+            // Find matching route
+            let routes = self.routes();
+            let route_match = routes.iter().find(|r| r.path == route);
 
-        if let Some(route) = route_match {
-            match &route.handler {
-                RouteHandler::Page(page_fn) => {
-                    let page = page_fn();
+            if let Some(route) = route_match {
+                match &route.handler {
+                    RouteHandler::Page(page_fn) => {
+                        let page = page_fn();
 
-                    // Render component to HTML
-                    let content = page.component.render_to_string();
+                        // Render component to HTML
+                        let element = page.component.render();
+                        let content = element_to_html(&element);
 
                     // Get server props
                     let props = serde_json::json!({
@@ -125,19 +155,23 @@ pub trait SSRApp: Layer9App {
                     });
 
                     // Build final HTML
+                    let config = self.ssr_config();
                     let html = self
                         .html_template()
                         .replace("{title}", &page.title)
                         .replace("{styles}", &get_critical_css())
                         .replace("{props}", &props.to_string())
-                        .replace("{content}", &content);
+                        .replace("{content}", &content)
+                        .replace("{wasm_dir}", &config.wasm_dir)
+                        .replace("{bundle_name}", &config.bundle_name);
 
-                    Ok(html)
+                        Ok(html)
+                    }
+                    _ => Err(StatusCode::NOT_FOUND),
                 }
-                _ => Err(StatusCode::NOT_FOUND),
+            } else {
+                Err(StatusCode::NOT_FOUND)
             }
-        } else {
-            Err(StatusCode::NOT_FOUND)
         }
     }
 }
@@ -165,12 +199,37 @@ fn get_critical_css() -> String {
 
 /// Create Axum server for SSR
 pub fn create_ssr_server<T: SSRApp + Send + Sync + 'static>(app: T) -> Router {
+    use tower_http::services::ServeDir;
+    
+    let config = app.ssr_config();
     let app = std::sync::Arc::new(app);
 
-    Router::new()
-        // Catch-all route for SSR
-        .route(
-            "/*path",
+    let mut router = Router::new()
+        // Serve static assets (WASM, JS, CSS)
+        .nest_service(&format!("/{}", config.wasm_dir), ServeDir::new(&config.wasm_dir));
+    
+    // Add static directory if configured
+    if let Some(static_dir) = config.static_dir {
+        router = router.nest_service("/static", ServeDir::new(static_dir));
+    }
+    
+    // Mount database API if database is initialized
+    #[cfg(feature = "ssr")]
+    {
+        if let Ok(db_conn) = crate::db_sqlx::get_db_connection() {
+            router = router.nest("/api/db", crate::db_api::create_db_api_router(db_conn));
+        } else {
+            router = router.route("/api/db/*path", get(|| async { 
+                (StatusCode::SERVICE_UNAVAILABLE, "Database not initialized")
+            }));
+        }
+    }
+    
+    router
+        // Other API routes if needed
+        .route("/api/*path", get(|| async { StatusCode::NOT_IMPLEMENTED }))
+        // Catch-all route for SSR (must be last)
+        .fallback(
             get(move |Path(path): Path<String>| {
                 let app = app.clone();
                 async move {
@@ -188,27 +247,27 @@ pub fn create_ssr_server<T: SSRApp + Send + Sync + 'static>(app: T) -> Router {
                 }
             }),
         )
-        // Static files
-        .route(
-            "/layer9_bundle.js",
-            get(|| async {
-                // In production, serve the actual Layer9SM bundle
-                "// Layer9 bundle placeholder"
-            }),
-        )
 }
 
 /// Hydration helper for client side
-#[wasm_bindgen]
-pub fn hydrate_app(app: impl Layer9App + 'static) {
+/// Note: This function should be called from JavaScript after WASM is loaded
+pub fn hydrate_app_internal(app: impl Layer9App + 'static) {
     // Get props from server
     let window = web_sys::window().unwrap();
-    let props = js_sys::Reflect::get(&window, &"__Layer9_PROPS__".into())
+    let _props: Option<serde_json::Value> = js_sys::Reflect::get(&window, &"__Layer9_PROPS__".into())
         .ok()
         .and_then(|v| serde_wasm_bindgen::from_value(v).ok());
 
     // Initialize app with server props
     run_app(app);
+}
+
+/// Export hydration function for WASM
+#[wasm_bindgen]
+pub fn hydrate() {
+    // This would be implemented by the specific app
+    // For now, just log
+    web_sys::console::log_1(&"Layer9 hydration called".into());
 }
 
 /// Static Site Generation

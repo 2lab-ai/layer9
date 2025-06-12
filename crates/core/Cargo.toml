@@ -77,10 +77,13 @@ regex = "1.11"
 axum = { version = "0.7", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["fs"], optional = true }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "json"], optional = true }
+uuid = { version = "1", features = ["v4"], optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
 [features]
 default = []
-ssr = ["axum", "tokio", "tower"]
+ssr = ["axum", "tokio", "tower", "tower-http", "sqlx", "uuid"]

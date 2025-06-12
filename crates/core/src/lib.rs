@@ -16,6 +16,10 @@ pub mod auth;
 pub mod cache;
 pub mod component;
 pub mod db;
+#[cfg(feature = "ssr")]
+pub mod db_api;
+#[cfg(feature = "ssr")]
+pub mod db_sqlx;
 pub mod env;
 pub mod error;
 pub mod fetch;
@@ -60,7 +64,7 @@ pub mod prelude {
     pub use crate::security::{use_csrf_token, use_security, XssProtection};
     pub use crate::server::{Response, ServerError, ServerFunction};
     #[cfg(feature = "ssr")]
-    pub use crate::ssr::{create_ssr_server, hydrate_app, SSRApp, SSRComponent, SSG};
+    pub use crate::ssr::{create_ssr_server, hydrate, hydrate_app_internal, SSRApp, SSRComponent, SSG};
     pub use crate::state::{
         create_app_store, create_atom, use_atom, use_selector, AppAction, AppState,
     };

@@ -19,7 +19,7 @@
     "validate": "node test/localhost-validator.js",
     "ultra": "node test/ultra-validator.js",
     "build:example": "cd examples/counter && wasm-pack build --target web --out-dir pkg",
-    "serve:example": "cd examples/counter && python3 -m http.server 8080",
+    "serve:example": "cargo run --manifest-path crates/layer9-server/Cargo.toml -- --dir examples/counter --port 8080",
     "dev": "node scripts/dev-server.js",
     "dev:simple": "npm run build:example && npm run serve:example",
     "health-check": "node test/layer9-health-check.js"

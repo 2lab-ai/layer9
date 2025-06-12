@@ -106,8 +106,17 @@ class LocalhostValidator {
         this.log('Starting HTTP server...');
         
         return new Promise((resolve) => {
-            this.serverProcess = spawn('python3', ['-m', 'http.server', '8080'], {
-                cwd: path.join(process.cwd(), 'examples', 'counter'),
+            this.serverProcess = spawn('cargo', [
+                'run',
+                '--manifest-path',
+                'crates/layer9-server/Cargo.toml',
+                '--',
+                '--dir',
+                'examples/counter',
+                '--port',
+                '8080'
+            ], {
+                cwd: process.cwd(),
                 stdio: 'pipe'
             });
 
