@@ -234,7 +234,7 @@ async fn dev_server(port: u16, hot: bool, open: bool) -> Result<()> {
     if which::which("wasm-pack").is_err() {
         println!("{}", "⚠️  wasm-pack not found. Installing...".yellow());
         std::process::Command::new("curl")
-            .args(&[
+            .args([
                 "https://rustwasm.github.io/wasm-pack/installer/init.sh",
                 "-sSf",
             ])
@@ -253,7 +253,7 @@ async fn dev_server(port: u16, hot: bool, open: bool) -> Result<()> {
         if let Ok(event) = res {
             if event.paths.iter().any(|p| {
                 p.extension()
-                    .map_or(false, |ext| ext == "rs" || ext == "toml")
+                    .is_some_and(|ext| ext == "rs" || ext == "toml")
             }) {
                 let _ = tx.send(());
             }
@@ -313,7 +313,7 @@ async fn dev_server(port: u16, hot: bool, open: bool) -> Result<()> {
 /// Build WASM bundle
 fn build_wasm() -> Result<()> {
     let output = std::process::Command::new("wasm-pack")
-        .args(&["build", "--target", "web", "--out-dir", "pkg"])
+        .args(["build", "--target", "web", "--out-dir", "pkg"])
         .output()
         .context("Failed to run wasm-pack")?;
 
@@ -430,7 +430,7 @@ async fn build_project(mode: &str, output: &PathBuf, ssg: bool) -> Result<()> {
     };
 
     let output_cmd = std::process::Command::new("wasm-pack")
-        .args(&args)
+        .args(args)
         .output()?;
 
     if !output_cmd.status.success() {
@@ -446,7 +446,7 @@ async fn build_project(mode: &str, output: &PathBuf, ssg: bool) -> Result<()> {
     if mode == "production" && which::which("wasm-opt").is_ok() {
         let wasm_file = output.join("layer9_app_bg.wasm");
         std::process::Command::new("wasm-opt")
-            .args(&[
+            .args([
                 "-Oz",
                 "-o",
                 wasm_file.to_str().unwrap(),
@@ -508,7 +508,7 @@ async fn deploy_vercel() -> Result<()> {
 
     // Run vercel deploy
     let output = std::process::Command::new("vercel")
-        .args(&["--prod"])
+        .args(["--prod"])
         .output()?;
 
     if !output.status.success() {
@@ -533,7 +533,7 @@ async fn check_project() -> Result<()> {
     println!("{}", "🔍 Running type check...".bright_blue().bold());
 
     let output = std::process::Command::new("cargo")
-        .args(&["check"])
+        .args(["check"])
         .output()?;
 
     if !output.status.success() {
@@ -550,7 +550,7 @@ async fn format_project() -> Result<()> {
     println!("{}", "🎨 Formatting code...".bright_blue().bold());
 
     let output = std::process::Command::new("cargo")
-        .args(&["fmt"])
+        .args(["fmt"])
         .output()?;
 
     if !output.status.success() {

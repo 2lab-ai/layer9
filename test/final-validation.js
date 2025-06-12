@@ -35,10 +35,17 @@ async function validateLayer9() {
         // 1. Load Test
         console.log('1️⃣  Testing: Page Load');
         const loadStart = Date.now();
-        const response = await page.goto('http://localhost:8080', {
-            waitUntil: 'networkidle0',
-            timeout: 10000
-        });
+        let response;
+        try {
+            response = await page.goto('http://localhost:8080', {
+                waitUntil: 'networkidle0',
+                timeout: 10000
+            });
+        } catch (e) {
+            console.log('   ⚠️  Server not running, skipping browser tests');
+            tests.failed += 5; // Mark all browser tests as failed
+            return;
+        }
         const loadTime = Date.now() - loadStart;
         
         if (response.status() === 200 && loadTime < 5000) {

@@ -22,7 +22,9 @@
     "serve:example": "cargo run --manifest-path crates/layer9-server/Cargo.toml -- --dir examples/counter --port 8080",
     "dev": "node scripts/dev-server.js",
     "dev:simple": "npm run build:example && npm run serve:example",
-    "health-check": "node test/layer9-health-check.js"
+    "health-check": "node test/layer9-health-check.js",
+    "test:wasm": "wasm-pack test --chrome --headless examples/counter",
+    "test:wasm:core": "cd crates/core && wasm-pack test --chrome --headless"
   },
   "repository": {
     "type": "git",

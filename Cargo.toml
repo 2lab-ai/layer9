@@ -12,8 +12,9 @@ members = [
     "crates/macro",
     "crates/runtime",
     "crates/cli",
+    "crates/layer9-server",
     "examples/counter",
-    "examples/github-dashboard", "crates/layer9-server",
+    # "examples/github-dashboard", # TODO: Fix view! macro syntax
 ]
 
 [dependencies]
