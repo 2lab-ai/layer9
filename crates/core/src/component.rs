@@ -2,7 +2,9 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use web_sys::{Element as DomElement, Node};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use web_sys::{Element as DomElement, HtmlElement, MouseEvent, Node};
 
 /// Virtual DOM Element
 #[derive(Clone)]
@@ -81,6 +83,24 @@ impl Element {
                     element.set_attribute(key, value).unwrap();
                 }
 
+                // Handle click event
+                if let Some(on_click) = &props.on_click {
+                    if let Some(html_element) = element.dyn_ref::<HtmlElement>() {
+                        let handler = on_click.clone();
+                        let closure = Closure::wrap(Box::new(move |_event: MouseEvent| {
+                            handler();
+                        })
+                            as Box<dyn FnMut(_)>);
+
+                        html_element.set_onclick(Some(closure.as_ref().unchecked_ref()));
+
+                        // Important: We need to forget the closure to prevent it from being dropped
+                        // In a real application, you'd want to store these closures somewhere
+                        // to properly clean them up later
+                        closure.forget();
+                    }
+                }
+
                 // Add children
                 for child in children {
                     element.append_child(&child.to_dom()).unwrap();
@@ -93,16 +113,21 @@ impl Element {
     }
 }
 
-/// Reactive state hook
+/// Type alias for update callback
+type UpdateCallback = Rc<RefCell<Option<Box<dyn Fn()>>>>;
+
+/// Reactive state hook with update callback
 #[derive(Clone)]
 pub struct State<T> {
     value: Rc<RefCell<T>>,
+    update_callback: UpdateCallback,
 }
 
 impl<T: Clone> State<T> {
     pub fn new(initial: T) -> Self {
         State {
             value: Rc::new(RefCell::new(initial)),
+            update_callback: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -117,8 +142,15 @@ impl<T: Clone> State<T> {
     }
 
     fn trigger_update(&self) {
-        // TODO: Implement efficient re-rendering
-        web_sys::console::log_1(&"State updated, re-render needed".into());
+        if let Some(callback) = self.update_callback.borrow().as_ref() {
+            callback();
+        } else {
+            web_sys::console::log_1(&"State updated, re-render needed".into());
+        }
+    }
+
+    pub fn set_update_callback(&self, callback: Box<dyn Fn()>) {
+        *self.update_callback.borrow_mut() = Some(callback);
     }
 }
 
