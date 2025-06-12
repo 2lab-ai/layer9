@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer9 Examples Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .example-test {
+            margin: 20px 0;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .example-test h3 {
+            margin-top: 0;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .status.loading { background: #666; }
+        .status.success { background: #0a0; }
+        .status.error { background: #a00; }
+        .iframe-container {
+            margin: 10px 0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 400px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        .console-output {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .error { color: #f66; }
+        .log { color: #aaa; }
+        .warn { color: #fa0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Layer9 Examples Test Suite</h1>
+        <p>Testing all Layer9 examples for functionality...</p>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        const examples = [
+            { name: 'Counter', path: '/examples/counter/' },
+            { name: 'Async Counter', path: '/examples/async-counter/' },
+            { name: 'Todo App', path: '/examples/todo-app/' },
+            { name: 'Memory Game', path: '/examples/memory-game/' },
+            { name: 'Form Validation', path: '/examples/form-validation/' },
+            { name: 'GitHub Dashboard', path: '/examples/github-dashboard/' }
+        ];
+
+        async function testExample(example) {
+            const container = document.createElement('div');
+            container.className = 'example-test';
+            container.innerHTML = `
+                <h3>${example.name}</h3>
+                <div class="status loading">Loading...</div>
+                <div class="iframe-container">
+                    <iframe id="frame-${example.name.replace(/\s+/g, '-')}"></iframe>
+                </div>
+                <div class="console-output" id="console-${example.name.replace(/\s+/g, '-')}"></div>
+            `;
+            document.getElementById('test-results').appendChild(container);
+
+            const statusEl = container.querySelector('.status');
+            const iframe = container.querySelector('iframe');
+            const consoleEl = container.querySelector('.console-output');
+            
+            // Set up message listener for iframe console logs
+            const messageHandler = (event) => {
+                if (event.source === iframe.contentWindow) {
+                    const { type, message } = event.data;
+                    if (type && message) {
+                        const logEl = document.createElement('div');
+                        logEl.className = type;
+                        logEl.textContent = `[${type}] ${message}`;
+                        consoleEl.appendChild(logEl);
+                    }
+                }
+            };
+            window.addEventListener('message', messageHandler);
+
+            try {
+                // Inject console interceptor into iframe
+                iframe.onload = () => {
+                    try {
+                        iframe.contentWindow.eval(`
+                            (function() {
+                                const originalConsole = {
+                                    log: console.log,
+                                    error: console.error,
+                                    warn: console.warn
+                                };
+                                
+                                console.log = function(...args) {
+                                    originalConsole.log(...args);
+                                    window.parent.postMessage({
+                                        type: 'log',
+                                        message: args.join(' ')
+                                    }, '*');
+                                };
+                                
+                                console.error = function(...args) {
+                                    originalConsole.error(...args);
+                                    window.parent.postMessage({
+                                        type: 'error',
+                                        message: args.join(' ')
+                                    }, '*');
+                                };
+                                
+                                console.warn = function(...args) {
+                                    originalConsole.warn(...args);
+                                    window.parent.postMessage({
+                                        type: 'warn',
+                                        message: args.join(' ')
+                                    }, '*');
+                                };
+                                
+                                window.addEventListener('error', (e) => {
+                                    window.parent.postMessage({
+                                        type: 'error',
+                                        message: e.message + ' at ' + e.filename + ':' + e.lineno
+                                    }, '*');
+                                });
+                            })();
+                        `);
+                        
+                        // Check if app loaded after a delay
+                        setTimeout(() => {
+                            const hasApp = iframe.contentDocument.getElementById('app');
+                            if (hasApp) {
+                                statusEl.textContent = 'Loaded Successfully';
+                                statusEl.className = 'status success';
+                                
+                                // Additional checks based on example type
+                                const doc = iframe.contentDocument;
+                                if (example.name === 'Counter') {
+                                    const buttons = doc.querySelectorAll('button');
+                                    consoleEl.innerHTML += `<div class="log">Found ${buttons.length} buttons</div>`;
+                                } else if (example.name === 'Todo App') {
+                                    const input = doc.querySelector('input[type="text"]');
+                                    consoleEl.innerHTML += `<div class="log">Input field: ${input ? 'Found' : 'Not found'}</div>`;
+                                } else if (example.name === 'Memory Game') {
+                                    const cards = doc.querySelectorAll('.card');
+                                    consoleEl.innerHTML += `<div class="log">Found ${cards.length} game cards</div>`;
+                                }
+                            } else {
+                                statusEl.textContent = 'App container not found';
+                                statusEl.className = 'status error';
+                            }
+                        }, 3000);
+                    } catch (e) {
+                        consoleEl.innerHTML += `<div class="error">Setup error: ${e.message}</div>`;
+                    }
+                };
+
+                iframe.src = example.path;
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+                statusEl.className = 'status error';
+            }
+        }
+
+        // Test all examples
+        examples.forEach((example, index) => {
+            setTimeout(() => testExample(example), index * 1000);
+        });
+    </script>
+</body>
+</html>
