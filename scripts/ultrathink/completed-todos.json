@@ -34,5 +34,13 @@
   {
     "text": "Database in Browser - HTTP facade, no real queries",
     "completedAt": "2025-06-13T05:39:55.490Z"
+  },
+  {
+    "text": "Authentication (15%) - Almost entirely fake",
+    "completedAt": "2025-06-13T06:01:29.631Z"
+  },
+  {
+    "text": "Production Ready: Needs 2-3 months more work",
+    "completedAt": "2025-06-13T06:05:48.500Z"
   }
 ]

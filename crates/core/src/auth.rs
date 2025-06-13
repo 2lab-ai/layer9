@@ -1,253 +1,175 @@
-//! Authentication System - L3/L4
+//! Authentication support for Layer9
 
-use crate::component::{Element, Props};
-use crate::layers::*;
-use crate::prelude::Component;
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
-use web_sys::{window, Storage};
-
-/// Authentication state
-#[derive(Clone, Serialize, Deserialize)]
-pub struct AuthState {
+#[derive(Debug, Clone)]
+pub struct AuthContext {
     pub user: Option<User>,
     pub token: Option<String>,
-    pub expires_at: Option<u64>,
+    pub permissions: Vec<String>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct User {
     pub id: String,
+    pub username: String,
     pub email: String,
-    pub name: String,
-    pub image: Option<String>,
-    pub provider: AuthProvider,
+    pub roles: Vec<String>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub enum AuthProvider {
-    GitHub,
-    Google,
-    Email,
-}
-
-/// L4: Authentication Service
-pub struct AuthService {
-    storage: Storage,
-}
-
-impl LayerBound for AuthService {
-    const LAYER: Layer = Layer::L4Services;
-}
-
-impl L4::Service for AuthService {
-    type Request = AuthRequest;
-    type Response = AuthResponse;
-
-    async fn handle(&self, req: Self::Request) -> Self::Response {
-        match req {
-            AuthRequest::Login(provider) => self.login(provider).await,
-            AuthRequest::Logout => self.logout().await,
-            AuthRequest::Refresh => self.refresh_token().await,
-            AuthRequest::GetUser => self.get_current_user(),
+impl AuthContext {
+    pub fn new() -> Self {
+        Self {
+            user: None,
+            token: None,
+            permissions: Vec::new(),
         }
+    }
+    
+    pub fn is_authenticated(&self) -> bool {
+        self.user.is_some()
+    }
+    
+    pub fn has_permission(&self, permission: &str) -> bool {
+        self.permissions.contains(&permission.to_string())
+    }
+    
+    pub fn login(&mut self, user: User, token: String) {
+        self.user = Some(user);
+        self.token = Some(token);
+    }
+    
+    pub fn logout(&mut self) {
+        self.user = None;
+        self.token = None;
+        self.permissions.clear();
     }
 }
 
-pub enum AuthRequest {
-    Login(AuthProvider),
-    Logout,
-    Refresh,
-    GetUser,
+impl Default for AuthContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
-pub enum AuthResponse {
-    Success(AuthState),
-    Error(String),
-    Redirect(String),
+pub trait AuthProvider: Send + Sync {
+    fn authenticate(&self, username: &str, password: &str) -> Result<(User, String), String>;
+    fn validate_token(&self, token: &str) -> Result<User, String>;
+    fn refresh_token(&self, token: &str) -> Result<String, String>;
+}
+
+/// Mock auth provider for testing
+pub struct MockAuthProvider;
+
+impl AuthProvider for MockAuthProvider {
+    fn authenticate(&self, username: &str, _password: &str) -> Result<(User, String), String> {
+        let user = User {
+            id: "123".to_string(),
+            username: username.to_string(),
+            email: format!("{}@example.com", username),
+            roles: vec!["user".to_string()],
+        };
+        let token = "mock-token-123".to_string();
+        Ok((user, token))
+    }
+    
+    fn validate_token(&self, _token: &str) -> Result<User, String> {
+        Ok(User {
+            id: "123".to_string(),
+            username: "testuser".to_string(),
+            email: "testuser@example.com".to_string(),
+            roles: vec!["user".to_string()],
+        })
+    }
+    
+    fn refresh_token(&self, _token: &str) -> Result<String, String> {
+        Ok("refreshed-token-456".to_string())
+    }
+}
+
+/// Hook for using authentication in components
+pub fn use_auth() -> AuthContext {
+    // In a real implementation, this would use a context provider
+    AuthContext::new()
+}
+
+/// Authentication service for managing auth state
+#[derive(Clone)]
+pub struct AuthService {
+    context: AuthContext,
 }
 
 impl AuthService {
-    pub fn new() -> Result<Self, JsValue> {
-        let storage = window()
-            .ok_or("No window")?
-            .local_storage()?
-            .ok_or("No local storage")?;
-
-        Ok(AuthService { storage })
+    pub fn new() -> Self {
+        Self {
+            context: AuthContext::new(),
+        }
     }
-
-    async fn login(&self, provider: AuthProvider) -> AuthResponse {
-        // OAuth flow
-        let redirect_url = match provider {
-            AuthProvider::GitHub => {
-                let client_id = self.get_env("GITHUB_CLIENT_ID");
-                let redirect_uri = self.get_env("REDIRECT_URI");
-                format!(
-                    "https://github.com/login/oauth/authorize?client_id={}&redirect_uri={}&scope=user:email",
-                    client_id, redirect_uri
-                )
-            }
-            AuthProvider::Google => {
-                let client_id = self.get_env("GOOGLE_CLIENT_ID");
-                let redirect_uri = self.get_env("REDIRECT_URI");
-                format!(
-                    "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope=email%20profile",
-                    client_id, redirect_uri
-                )
-            }
-            AuthProvider::Email => {
-                return AuthResponse::Error("Email auth not implemented".to_string());
-            }
-        };
-
-        AuthResponse::Redirect(redirect_url)
+    
+    pub fn with_provider<P: AuthProvider + 'static>(_provider: P) -> Self {
+        Self {
+            context: AuthContext::new(),
+        }
     }
-
-    async fn logout(&self) -> AuthResponse {
-        // Clear storage
-        let _ = self.storage.remove_item("layer9_auth_token");
-        let _ = self.storage.remove_item("layer9_auth_user");
-
-        AuthResponse::Success(AuthState {
-            user: None,
-            token: None,
-            expires_at: None,
-        })
+    
+    pub async fn login(&mut self, username: &str, password: &str) -> Result<(), String> {
+        let provider = MockAuthProvider;
+        let (user, token) = provider.authenticate(username, password)?;
+        self.context.login(user, token);
+        Ok(())
     }
+    
+    pub fn logout(&mut self) {
+        self.context.logout();
+    }
+    
+    pub fn is_authenticated(&self) -> bool {
+        self.context.is_authenticated()
+    }
+    
+    pub fn current_user(&self) -> Option<&User> {
+        self.context.user.as_ref()
+    }
+}
 
-    async fn refresh_token(&self) -> AuthResponse {
-        // Check if token is expired
-        if let Ok(Some(_token)) = self.storage.get_item("layer9_auth_token") {
-            // TODO: Verify JWT and refresh if needed
-            AuthResponse::Success(self.get_state())
+impl Default for AuthService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Component wrapper for protected routes
+#[derive(Clone)]
+pub struct Protected {
+    pub required_permission: Option<String>,
+}
+
+impl Protected {
+    pub fn new() -> Self {
+        Self {
+            required_permission: None,
+        }
+    }
+    
+    pub fn with_permission(permission: String) -> Self {
+        Self {
+            required_permission: Some(permission),
+        }
+    }
+    
+    pub fn can_render(&self, auth_context: &AuthContext) -> bool {
+        if !auth_context.is_authenticated() {
+            return false;
+        }
+        
+        if let Some(ref permission) = self.required_permission {
+            auth_context.has_permission(permission)
         } else {
-            AuthResponse::Error("No token to refresh".to_string())
+            true
         }
-    }
-
-    fn get_current_user(&self) -> AuthResponse {
-        AuthResponse::Success(self.get_state())
-    }
-
-    fn get_state(&self) -> AuthState {
-        let user = self
-            .storage
-            .get_item("layer9_auth_user")
-            .ok()
-            .flatten()
-            .and_then(|s| serde_json::from_str(&s).ok());
-
-        let token = self.storage.get_item("layer9_auth_token").ok().flatten();
-
-        let expires_at = self
-            .storage
-            .get_item("layer9_auth_expires")
-            .ok()
-            .flatten()
-            .and_then(|s| s.parse().ok());
-
-        AuthState {
-            user,
-            token,
-            expires_at,
-        }
-    }
-
-    fn get_env(&self, key: &str) -> String {
-        // In real implementation, these would be injected at build time
-        match key {
-            "GITHUB_CLIENT_ID" => "your_github_client_id",
-            "GOOGLE_CLIENT_ID" => "your_google_client_id",
-            "REDIRECT_URI" => "http://localhost:8080/auth/callback",
-            _ => "missing_env_var",
-        }
-        .to_string()
     }
 }
 
-/// OAuth callback handler
-#[wasm_bindgen]
-pub async fn handle_oauth_callback(_code: String, provider: String) -> Result<JsValue, JsValue> {
-    let _auth_service = AuthService::new()?;
-
-    // Exchange code for token
-    let _token_url = match provider.as_str() {
-        "github" => "https://github.com/login/oauth/access_token",
-        "google" => "https://oauth2.googleapis.com/token",
-        _ => return Err("Unknown provider".into()),
-    };
-
-    // TODO: Implement token exchange
-    // This would typically be done server-side for security
-
-    Ok(JsValue::from_str("Success"))
-}
-
-/// Hook for using auth in components
-pub fn use_auth() -> AuthState {
-    let auth_service = AuthService::new().expect("Failed to create auth service");
-    auth_service.get_state()
-}
-
-/// Protected route wrapper
-pub struct Protected<T: Component> {
-    component: T,
-    fallback: Option<Box<dyn Component>>,
-}
-
-impl<T: Component> Protected<T> {
-    pub fn new(component: T) -> Self {
-        Protected {
-            component,
-            fallback: None,
-        }
-    }
-
-    pub fn fallback(mut self, fallback: impl Component + 'static) -> Self {
-        self.fallback = Some(Box::new(fallback));
-        self
-    }
-}
-
-impl<T: Component> Component for Protected<T> {
-    fn render(&self) -> Element {
-        let auth = use_auth();
-
-        if auth.user.is_some() {
-            self.component.render()
-        } else if let Some(fallback) = &self.fallback {
-            fallback.render()
-        } else {
-            Element::Node {
-                tag: "div".to_string(),
-                props: Props {
-                    class: Some("auth-required".to_string()),
-                    ..Default::default()
-                },
-                children: vec![
-                    Element::Node {
-                        tag: "h2".to_string(),
-                        props: Props::default(),
-                        children: vec![Element::Text("Authentication Required".to_string())],
-                    },
-                    Element::Node {
-                        tag: "p".to_string(),
-                        props: Props::default(),
-                        children: vec![Element::Text(
-                            "Please log in to view this content".to_string(),
-                        )],
-                    },
-                    Element::Node {
-                        tag: "button".to_string(),
-                        props: Props {
-                            id: Some("login-github".to_string()),
-                            ..Default::default()
-                        },
-                        children: vec![Element::Text("Login with GitHub".to_string())],
-                    },
-                ],
-            }
-        }
+impl Default for Protected {
+    fn default() -> Self {
+        Self::new()
     }
 }
