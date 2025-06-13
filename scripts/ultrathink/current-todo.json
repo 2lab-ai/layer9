@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-06-13T06:38:26.736Z",
+  "timestamp": "2025-06-13T07:33:02.462Z",
   "selected": {
-    "text": "PWA/Service Workers - Not implemented",
+    "text": "Production Deploy - No working examples",
     "priority": "high",
     "type": "missing",
-    "score": 40
+    "score": 30
   },
   "reason": "high priority task for framework completion"
 }
