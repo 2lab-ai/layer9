@@ -15,7 +15,12 @@ pub mod app;
 // pub mod async_component; // Using v2 instead
 pub mod async_component_v2;
 pub mod auth;
+#[cfg(test)]
+mod auth_tests;
+#[cfg(test)]
+mod auth_upload_integration_tests;
 pub mod cache;
+pub mod jwt;
 pub mod component;
 pub mod db;
 #[cfg(feature = "ssr")]
@@ -47,6 +52,8 @@ pub mod styles;
 pub mod test;
 pub mod ui;
 pub mod upload;
+#[cfg(test)]
+mod upload_tests;
 pub mod vdom;
 pub mod websocket;
 
@@ -81,7 +88,7 @@ pub mod prelude {
     pub use crate::security::{use_csrf_token, use_security, XssProtection};
     pub use crate::server::{Response, ServerError, ServerFunction};
     #[cfg(feature = "ssr")]
-    pub use crate::ssr::{create_ssr_server, hydrate, hydrate_app_internal, SSRApp, SSRComponent, SSG};
+    pub use crate::ssr::{SSRComponent, SSRContext, SSRRenderer};
     pub use crate::state::{
         create_app_store, create_atom, use_atom, use_selector, AppAction, AppState,
         // Note: use_effect is now provided by hooks module
