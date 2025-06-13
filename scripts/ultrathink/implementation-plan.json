@@ -1,8 +1,7 @@
 {
-  "type": "file-upload",
+  "type": "code-splitting",
   "testCommand": "npm test",
   "files": [
-    "crates/core/src/upload.rs",
-    "crates/core/src/lib.rs"
+    "webpack.config.js"
   ]
 }

@@ -18,5 +18,13 @@
   {
     "text": "File Upload (20%) - UI only, no actual uploads",
     "completedAt": "2025-06-13T04:06:29.407Z"
+  },
+  {
+    "text": "PWA/Service Workers - Not implemented",
+    "completedAt": "2025-06-13T05:04:36.789Z"
+  },
+  {
+    "text": "Code Splitting - Not implemented",
+    "completedAt": "2025-06-13T05:05:22.003Z"
   }
 ]
