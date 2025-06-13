@@ -1537,6 +1537,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "layer9-example-auth-upload"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "js-sys",
+ "layer9-core",
+ "layer9-macro",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "layer9-example-counter"
 version = "0.1.0"
 dependencies = [
