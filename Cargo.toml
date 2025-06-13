@@ -18,6 +18,7 @@ members = [
     "examples/todo-app",
     # "examples/form-validation", # TODO: Fix compilation errors
     "examples/memory-game",
+    "examples/auth-upload",
     # "examples/github-dashboard", # TODO: Fix view! macro syntax
 ]
 

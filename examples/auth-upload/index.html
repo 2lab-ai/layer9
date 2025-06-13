@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Layer9 Auth & Upload Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <div id="app">Loading Layer9...</div>
+    
+    <script type="module">
+        import init, { AuthUploadApp } from './pkg/layer9_example_auth_upload.js';
+        
+        async function run() {
+            await init();
+            
+            // Create app instance
+            const app = new AuthUploadApp();
+            window.wasmApp = app;
+            
+            // Render the app
+            document.getElementById('app').innerHTML = app.render();
+            
+            console.log('Layer9 Auth & Upload Demo loaded');
+        }
+        
+        run().catch(console.error);
+    </script>
+</body>
+</html>
