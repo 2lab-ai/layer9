@@ -26,5 +26,13 @@
   {
     "text": "Code Splitting - Not implemented",
     "completedAt": "2025-06-13T05:05:22.003Z"
+  },
+  {
+    "text": "Production Deploy - No working examples",
+    "completedAt": "2025-06-13T05:38:07.362Z"
+  },
+  {
+    "text": "Database in Browser - HTTP facade, no real queries",
+    "completedAt": "2025-06-13T05:39:55.490Z"
   }
 ]

@@ -1,7 +1,5 @@
 {
-  "type": "code-splitting",
+  "type": "generic",
   "testCommand": "npm test",
-  "files": [
-    "webpack.config.js"
-  ]
+  "files": []
 }

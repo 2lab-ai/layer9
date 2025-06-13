@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-06-13T05:05:22.002Z",
+  "timestamp": "2025-06-13T05:39:55.489Z",
   "selected": {
-    "text": "Code Splitting - Not implemented",
+    "text": "Database in Browser - HTTP facade, no real queries",
     "priority": "high",
     "type": "missing",
-    "score": 40
+    "score": 25
   },
   "reason": "high priority task for framework completion"
 }
