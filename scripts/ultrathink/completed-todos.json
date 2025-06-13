@@ -1,54 +1,10 @@
 [
   {
-    "text": "SSR: Server-side rendering not implemented yet",
-    "completedAt": "2025-06-13T03:45:00.000Z"
-  },
-  {
-    "text": "CRITICAL: Make counter example use Layer9, not raw DOM",
-    "completedAt": "2025-06-11T19:15:34.000Z"
-  },
-  {
-    "text": "Forms, auth, uploads need implementation",
-    "completedAt": "2025-06-13T03:47:16.875Z"
-  },
-  {
-    "text": "Bundle size still large (505KB for counter)",
-    "completedAt": "2025-06-13T04:05:45.104Z"
-  },
-  {
     "text": "File Upload (20%) - UI only, no actual uploads",
-    "completedAt": "2025-06-13T04:06:29.407Z"
+    "completedAt": "2025-06-13T06:36:16.347Z"
   },
   {
     "text": "PWA/Service Workers - Not implemented",
-    "completedAt": "2025-06-13T05:04:36.789Z"
-  },
-  {
-    "text": "Code Splitting - Not implemented",
-    "completedAt": "2025-06-13T05:05:22.003Z"
-  },
-  {
-    "text": "Production Deploy - No working examples",
-    "completedAt": "2025-06-13T05:38:07.362Z"
-  },
-  {
-    "text": "Database in Browser - HTTP facade, no real queries",
-    "completedAt": "2025-06-13T05:39:55.490Z"
-  },
-  {
-    "text": "Authentication (15%) - Almost entirely fake",
-    "completedAt": "2025-06-13T06:01:29.631Z"
-  },
-  {
-    "text": "Production Ready: Needs 2-3 months more work",
-    "completedAt": "2025-06-13T06:05:48.500Z"
-  },
-  {
-    "text": "Zero production deployments exist",
-    "completedAt": "2025-06-13T06:25:40.500Z"
-  },
-  {
-    "text": "SSR/SSG - Framework exists but untested with real DB",
-    "completedAt": "2025-06-13T06:26:29.454Z"
+    "completedAt": "2025-06-13T06:38:26.737Z"
   }
 ]

@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-06-13T06:26:29.453Z",
+  "timestamp": "2025-06-13T06:38:26.736Z",
   "selected": {
-    "text": "SSR/SSG - Framework exists but untested with real DB",
+    "text": "PWA/Service Workers - Not implemented",
     "priority": "high",
     "type": "missing",
-    "score": 5
+    "score": 40
   },
-  "reason": "SSR is a core feature claim that needs implementation"
+  "reason": "high priority task for framework completion"
 }
