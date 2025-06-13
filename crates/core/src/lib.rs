@@ -47,6 +47,8 @@ pub mod security;
 pub mod server;
 #[cfg(feature = "ssr")]
 pub mod ssr;
+#[cfg(all(test, feature = "ssr"))]
+mod ssr_tests;
 pub mod state;
 pub mod styles;
 pub mod test;
@@ -88,7 +90,13 @@ pub mod prelude {
     pub use crate::security::{use_csrf_token, use_security, XssProtection};
     pub use crate::server::{Response, ServerError, ServerFunction};
     #[cfg(feature = "ssr")]
-    pub use crate::ssr::{SSRComponent, SSRContext, SSRRenderer};
+    pub use crate::ssr::{
+        SSRComponent, SSRContext, SSRRenderer, SSRApp, SSRRoute, SSRRouteHandler,
+        create_ssr_server, SSRData
+    };
+    
+    #[cfg(all(feature = "ssr", target_arch = "wasm32"))]
+    pub use crate::ssr::{use_ssr_data, hydrate_app};
     pub use crate::state::{
         create_app_store, create_atom, use_atom, use_selector, AppAction, AppState,
         // Note: use_effect is now provided by hooks module
