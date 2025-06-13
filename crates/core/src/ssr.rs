@@ -72,6 +72,12 @@ impl SSRContext {
     }
 }
 
+impl Default for SSRContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Trait for SSR-capable components
 #[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
@@ -200,6 +206,12 @@ impl SSRRenderer {
     {{hydration_script}}
 </body>
 </html>"#.to_string()
+    }
+}
+
+impl Default for SSRRenderer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

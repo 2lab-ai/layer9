@@ -1,5 +1,8 @@
 {
-  "type": "generic",
+  "type": "ssr",
   "testCommand": "npm test",
-  "files": []
+  "files": [
+    "crates/core/src/ssr.rs",
+    "crates/core/src/lib.rs"
+  ]
 }

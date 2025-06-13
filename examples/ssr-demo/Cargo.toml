@@ -22,6 +22,10 @@ wee_alloc = "0.4"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = ["ssr"]
+ssr = ["layer9-core/ssr"]
+
 [profile.release]
 opt-level = "z"
 lto = true

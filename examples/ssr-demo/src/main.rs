@@ -11,7 +11,7 @@ async fn main() {
     {
         if let Ok(db_url) = std::env::var("DATABASE_URL") {
             if let Err(e) = layer9_core::db_sqlx::init_db_pool(&db_url).await {
-                eprintln!("Warning: Failed to initialize database: {}", e);
+                eprintln!("Warning: Failed to initialize database: {:?}", e);
             }
         }
     }

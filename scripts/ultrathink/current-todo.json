@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-06-13T07:33:02.462Z",
+  "timestamp": "2025-06-13T12:44:17.724Z",
   "selected": {
-    "text": "Production Deploy - No working examples",
+    "text": "SSR/SSG - Framework exists but untested with real DB",
     "priority": "high",
     "type": "missing",
-    "score": 30
+    "score": 5
   },
-  "reason": "high priority task for framework completion"
+  "reason": "SSR is a core feature claim that needs implementation"
 }

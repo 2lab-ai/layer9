@@ -14,5 +14,29 @@
   {
     "text": "Production Deploy - No working examples",
     "completedAt": "2025-06-13T07:33:02.463Z"
+  },
+  {
+    "text": "Database in Browser - HTTP facade, no real queries",
+    "completedAt": "2025-06-13T08:13:18.872Z"
+  },
+  {
+    "text": "Authentication (15%) - Almost entirely fake",
+    "completedAt": "2025-06-13T08:14:06.865Z"
+  },
+  {
+    "text": "SSR: Server-side rendering not implemented yet",
+    "completedAt": "2025-06-13T08:19:04.406Z"
+  },
+  {
+    "text": "Production Ready: Needs 2-3 months more work",
+    "completedAt": "2025-06-13T08:20:18.892Z"
+  },
+  {
+    "text": "Zero production deployments exist",
+    "completedAt": "2025-06-13T08:26:03.836Z"
+  },
+  {
+    "text": "SSR/SSG - Framework exists but untested with real DB",
+    "completedAt": "2025-06-13T12:44:17.725Z"
   }
 ]

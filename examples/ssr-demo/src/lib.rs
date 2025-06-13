@@ -24,6 +24,12 @@ impl HomePage {
     }
 }
 
+impl Default for HomePage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[async_trait]
 impl SSRComponent for HomePage {

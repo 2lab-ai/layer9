@@ -103,7 +103,7 @@ impl AuthUploadApp {
 </html>
         "#, 
             self.get_styles(),
-            self.render_main_content(&auth_context),
+            self.render_main_content(auth_context),
             self.get_scripts()
         )
     }
@@ -516,6 +516,12 @@ impl AuthUploadApp {
     #[wasm_bindgen]
     pub fn get_upload_status(&self) -> String {
         self.upload_component.get_upload_status()
+    }
+}
+
+impl Default for AuthUploadApp {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
