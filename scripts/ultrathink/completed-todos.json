@@ -42,5 +42,13 @@
   {
     "text": "Production Ready: Needs 2-3 months more work",
     "completedAt": "2025-06-13T06:05:48.500Z"
+  },
+  {
+    "text": "Zero production deployments exist",
+    "completedAt": "2025-06-13T06:25:40.500Z"
+  },
+  {
+    "text": "SSR/SSG - Framework exists but untested with real DB",
+    "completedAt": "2025-06-13T06:26:29.454Z"
   }
 ]

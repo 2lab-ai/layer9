@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-06-13T06:05:48.499Z",
+  "timestamp": "2025-06-13T06:26:29.453Z",
   "selected": {
-    "text": "Production Ready: Needs 2-3 months more work",
+    "text": "SSR/SSG - Framework exists but untested with real DB",
     "priority": "high",
     "type": "missing",
-    "score": 10
+    "score": 5
   },
-  "reason": "high priority task for framework completion"
+  "reason": "SSR is a core feature claim that needs implementation"
 }
