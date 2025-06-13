@@ -8,6 +8,9 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 
+// Re-export form traits
+pub use crate::form_traits::{FormFields, StringFormFields};
+
 // Type aliases to simplify complex types
 type ValidationFn<T> = Box<dyn Fn(&T) -> HashMap<String, Vec<String>>>;
 type SubmitFn<T> = Box<dyn Fn(&T) -> Pin<Box<dyn Future<Output = Result<(), String>> + 'static>>>;
@@ -70,9 +73,27 @@ impl<T: Clone + 'static> Form<T> {
         self.state.borrow().submitting
     }
 
-    pub fn set_field_value(&self, _field: &str, _value: impl Into<String>) {
-        // This is simplified - in real implementation you'd use reflection or macros
-        // to set the actual field on T
+    pub fn set_field_value(&self, field: &str, value: impl Into<String>) 
+    where 
+        T: FormFields
+    {
+        let value_string = value.into();
+        let mut state = self.state.borrow_mut();
+        
+        // Update the field value
+        if let Err(e) = state.values.set_field(field, value_string) {
+            // If setting fails, add to errors
+            state.errors.entry(field.to_string())
+                .or_default()
+                .push(e);
+        } else {
+            // Clear any previous errors for this field
+            state.errors.remove(field);
+            
+            // Run validation if configured
+            drop(state); // Release borrow before validate
+            self.validate();
+        }
     }
 
     pub fn set_field_touched(&self, field: &str, touched: bool) {

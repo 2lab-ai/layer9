@@ -6,9 +6,6 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
-[[bin]]
-name = "simple"
-path = "src/simple.rs"
 
 [dependencies]
 layer9-framework = { path = "../.." }
@@ -20,6 +17,3 @@ serde_json = "1.0"
 uuid = { version = "1.17", features = ["v4", "js"] }
 js-sys = "0.3"
 
-[profile.release]
-opt-level = "z"
-lto = true

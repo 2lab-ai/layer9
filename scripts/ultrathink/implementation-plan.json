@@ -1,19 +1,8 @@
 {
-  "timestamp": "2025-06-11T19:19:13.343Z",
-  "todo": "CRITICAL: Make counter example use Layer9, not raw DOM",
-  "plan": {
-    "type": "counter-example",
-    "files": [
-      "examples/counter/src/lib.rs",
-      "crates/core/src/component.rs",
-      "crates/core/src/state.rs"
-    ],
-    "steps": [
-      "Update counter example to use Layer9 components",
-      "Replace raw DOM manipulation with framework calls",
-      "Add proper state management hooks",
-      "Ensure WASM compilation still works"
-    ],
-    "testCommand": "npm run validate"
-  }
+  "type": "file-upload",
+  "testCommand": "npm test",
+  "files": [
+    "crates/core/src/upload.rs",
+    "crates/core/src/lib.rs"
+  ]
 }

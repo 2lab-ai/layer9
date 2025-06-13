@@ -23,14 +23,9 @@ features = [
     "HtmlHeadElement",
     "HtmlStyleElement",
     "Window",
+    "CssStyleDeclaration",
 ]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
-[profile.release]
-opt-level = "z"     # Optimize for size
-lto = true          # Enable Link Time Optimization
-codegen-units = 1   # Single codegen unit for better optimization
-panic = "abort"     # Smaller binary size
-strip = true        # Strip symbols

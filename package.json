@@ -8,7 +8,8 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "node test/final-validation.js",
+    "test": "node test/comprehensive-test-runner.js",
+    "test:quick": "node test/final-validation.js",
     "test:all": "npm run test:validation && npm run test:e2e && npm run test:final",
     "test:e2e": "node test/e2e/layer9-counter.test.js",
     "test:validation": "node test/layer9-validation.js",
@@ -16,15 +17,16 @@
     "test:stress": "node test/production-stress-test.js",
     "test:health": "node test/layer9-health-check.js",
     "test:ci": "node test/ci-test-suite.js",
-    "validate": "node test/localhost-validator.js",
+    "validate": "node test/fixed-validator.js",
     "ultra": "node test/ultra-validator.js",
-    "build:example": "cd examples/counter && wasm-pack build --target web --out-dir pkg",
+    "build:example": "cd examples/counter && wasm-pack build --target web --out-dir pkg && cd ../.. && npm run build:optimize",
     "serve:example": "cargo run --manifest-path crates/layer9-server/Cargo.toml -- --dir examples/counter --port 8080",
     "dev": "node scripts/dev-server.js",
     "dev:simple": "npm run build:example && npm run serve:example",
     "health-check": "node test/layer9-health-check.js",
     "test:wasm": "wasm-pack test --chrome --headless examples/counter",
-    "test:wasm:core": "cd crates/core && wasm-pack test --chrome --headless"
+    "test:wasm:core": "cd crates/core && wasm-pack test --chrome --headless",
+    "build:optimize": "./scripts/optimize-wasm.sh"
   },
   "repository": {
     "type": "git",

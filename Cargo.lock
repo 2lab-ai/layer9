@@ -1550,19 +1550,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "layer9-example-form"
-version = "0.1.0"
-dependencies = [
- "js-sys",
- "layer9-core",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "web-sys",
- "wee_alloc",
-]
-
-[[package]]
 name = "layer9-example-memory-game"
 version = "0.1.0"
 dependencies = [

@@ -16,7 +16,7 @@ class TestRunner {
     loadPlan() {
         try {
             const data = fs.readFileSync(this.planPath, 'utf8');
-            return JSON.parse(data).plan;
+            return JSON.parse(data);
         } catch (error) {
             console.error('No implementation plan found');
             return { testCommand: 'npm test' };

@@ -26,6 +26,8 @@ pub mod env;
 pub mod error;
 pub mod fetch;
 pub mod form;
+pub mod form_traits;
+pub mod form_builder;
 pub mod hooks;
 pub mod i18n;
 pub mod image;
@@ -87,7 +89,7 @@ pub mod prelude {
     pub use crate::styles::{inject_global_styles, style, StyleBuilder};
     pub use crate::test::{TestContext, TestResult, TestUtils};
     pub use crate::ui::*;
-    pub use crate::upload::{use_upload, UploadConfig};
+    pub use crate::upload::{FileUpload, FileUploadManager, UploadStatus};
     pub use crate::websocket::{use_websocket, WsMessage, WsState};
 }
 

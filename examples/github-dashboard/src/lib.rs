@@ -1,6 +1,6 @@
 //! GitHub Dashboard - 2lab.ai style in Layer9
 
-use layer9_framework::prelude::*;
+use layer9_core::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::rc::Rc;

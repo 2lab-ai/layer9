@@ -1,5 +1,5 @@
 [package]
-name = "layer9-example-form"
+name = "layer9-example-forms"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,9 +9,16 @@ crate-type = ["cdylib"]
 [dependencies]
 layer9-core = { path = "../../crates/core" }
 wasm-bindgen = "0.2"
-wee_alloc = "0.4"
-js-sys = "0.3"
-web-sys = { version = "0.3", features = ["console", "Window", "Document", "Element", "HtmlElement", "HtmlInputElement", "Event", "InputEvent"] }
+web-sys = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
+[dependencies.web-sys]
+features = [
+  "Document",
+  "Element",
+  "HtmlElement",
+  "HtmlInputElement",
+  "Window",
+  "console",
+]

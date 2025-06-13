@@ -38,7 +38,6 @@ impl Component for MemoryGame {
             let set_cards = set_cards.clone();
             let set_selected = set_selected.clone();
             let set_moves = set_moves.clone();
-            let moves = moves;
             let set_game_won = set_game_won.clone();
             
             move || {

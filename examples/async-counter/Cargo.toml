@@ -16,8 +16,3 @@ gloo-timers = { version = "0.3", features = ["futures"] }
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["console", "Window"] }
 
-[profile.release]
-panic = "abort"
-codegen-units = 1
-opt-level = "z"
-lto = true

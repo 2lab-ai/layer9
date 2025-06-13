@@ -18,7 +18,7 @@ impl Component for AsyncCounter {
         let (count, set_count) = use_state(0i32);
         let (loading, set_loading) = use_state(true);
         let (message, set_message) = use_state("Loading...".to_string());
-        let (error, set_error) = use_state(false);
+        let (_error, _set_error) = use_state(false);
         
         // Simulate async data loading on mount
         use_effect((), {
@@ -48,7 +48,6 @@ impl Component for AsyncCounter {
         
         // Update message based on count
         use_effect(count, {
-            let count = count;
             let set_message = set_message.clone();
             move || {
                 if !loading {
@@ -56,7 +55,7 @@ impl Component for AsyncCounter {
                         0 => "Zero - The beginning of everything! 🌟",
                         n if n < 0 => "Venturing into negative territory! ❄️",
                         n if n > 100 => "Triple digits! You're on fire! 🔥",
-                        n if n == 42 => "The answer to everything! 🌌",
+                        42 => "The answer to everything! 🌌",
                         n if n % 10 == 0 => "Perfect ten! Nice round number! ✨",
                         _ => "Keep counting, you're doing great! 🚀",
                     };
@@ -67,13 +66,11 @@ impl Component for AsyncCounter {
         });
         
         let increment = {
-            let count = count;
             let set_count = set_count.clone();
             move || set_count(count + 1)
         };
         
         let decrement = {
-            let count = count;
             let set_count = set_count.clone();
             move || set_count(count - 1)
         };

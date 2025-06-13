@@ -1,12 +1,12 @@
-I need you to implement the following TODO from the Layer9 framework project: "CRITICAL: Make counter example use Layer9, not raw DOM"
+I need you to implement the following TODO from the Layer9 framework project: "SSR: Server-side rendering not implemented yet"
 
 
-The counter example currently uses raw DOM manipulation. You need to:
-1. Read the current counter example at examples/counter/src/lib.rs
-2. Understand the Layer9 component system by examining crates/core/src/component.rs and crates/core/src/state.rs
-3. Rewrite the counter example to use Layer9 components, state hooks, and event handling
-4. Ensure it still compiles to WASM and works correctly
-5. The counter should increment/decrement when buttons are clicked
-6. Use Layer9's html! macro and component system instead of raw DOM manipulation
+Server-Side Rendering is currently not implemented. You need to:
+1. Examine crates/core/src/ssr.rs and identify placeholder code
+2. Implement actual HTML generation from components
+3. Add hydration markers for client-side rehydration
+4. Update crates/layer9-server/src/main.rs to use the SSR functionality
+5. Ensure components can render to HTML strings on the server
+6. Handle async data fetching during SSR
 
-Make sure to maintain the same functionality while demonstrating proper Layer9 framework usage.
+Focus on getting basic SSR working first, then optimize.

@@ -6,7 +6,9 @@ const path = require('path');
 class TodoSelector {
     constructor() {
         this.todosPath = path.join(__dirname, 'todos.json');
+        this.completedPath = path.join(__dirname, 'completed-todos.json');
         this.todos = this.loadTodos();
+        this.completed = this.loadCompleted();
     }
 
     loadTodos() {
@@ -18,6 +20,15 @@ class TodoSelector {
             process.exit(1);
         }
     }
+    
+    loadCompleted() {
+        try {
+            const data = fs.readFileSync(this.completedPath, 'utf8');
+            return JSON.parse(data);
+        } catch (error) {
+            return [];
+        }
+    }
 
     selectTodo() {
         // Priority order: critical > high > medium > low
@@ -26,11 +37,24 @@ class TodoSelector {
         for (const priority of priorities) {
             const todos = this.todos.categories[priority];
             if (todos && todos.length > 0) {
+                // Filter out completed TODOs
+                const remaining = todos.filter(todo => 
+                    !this.completed.some(completed => 
+                        completed.text === todo.text || 
+                        this.isSimilar(completed.text, todo.text)
+                    )
+                );
+                
+                if (remaining.length === 0) continue;
+                
                 // Select based on implementation difficulty and impact
-                const selected = this.selectBestTodo(todos);
+                const selected = this.selectBestTodo(remaining);
                 
                 // Save selection
                 this.saveSelection(selected);
+                
+                // Mark as completed
+                this.markCompleted(selected);
                 
                 // Return just the text for the Makefile
                 console.log(selected.text);
@@ -40,6 +64,21 @@ class TodoSelector {
         
         console.error('No TODOs found to implement!');
         process.exit(1);
+    }
+    
+    isSimilar(text1, text2) {
+        // Check if two TODO texts are similar (to avoid duplicates)
+        const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normalize(text1).includes(normalize(text2)) || 
+               normalize(text2).includes(normalize(text1));
+    }
+    
+    markCompleted(todo) {
+        this.completed.push({
+            text: todo.text,
+            completedAt: new Date().toISOString()
+        });
+        fs.writeFileSync(this.completedPath, JSON.stringify(this.completed, null, 2));
     }
 
     selectBestTodo(todos) {
@@ -57,11 +96,14 @@ class TodoSelector {
             if (todo.type === 'fix') score += 20;
             
             // Specific high-value targets
-            if (todo.text.includes('counter example use Layer9')) score += 50;
-            if (todo.text.includes('SSR')) score += 30;
-            if (todo.text.includes('state management')) score += 40;
-            if (todo.text.includes('router')) score += 35;
-            if (todo.text.includes('component')) score += 35;
+            if (todo.text.includes('Bundle size')) score += 50;
+            if (todo.text.includes('Forms')) score += 45;
+            if (todo.text.includes('auth')) score += 40;
+            if (todo.text.includes('Upload')) score += 35;
+            if (todo.text.includes('PWA')) score += 30;
+            if (todo.text.includes('Code Splitting')) score += 30;
+            if (todo.text.includes('Database')) score += 25;
+            if (todo.text.includes('Production Deploy')) score += 20;
             
             // Avoid complex tasks for now
             if (todo.text.includes('GraphQL')) score -= 10;

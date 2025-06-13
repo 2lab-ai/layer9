@@ -28,7 +28,7 @@ impl Component for CounterApp {
                 // Reset animation class after animation completes
                 let set_animation_class_clone = set_animation_class.clone();
                 web_sys::window().unwrap().set_timeout_with_callback_and_timeout_and_arguments_0(
-                    &wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+                    wasm_bindgen::closure::Closure::wrap(Box::new(move || {
                         set_animation_class_clone(String::new());
                     }) as Box<dyn FnMut()>).as_ref().unchecked_ref(),
                     300
@@ -37,7 +37,6 @@ impl Component for CounterApp {
         };
         
         let increment = {
-            let count = count;
             let set_count = set_count.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
@@ -47,7 +46,6 @@ impl Component for CounterApp {
         };
         
         let decrement = {
-            let count = count;
             let set_count = set_count.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
@@ -57,7 +55,6 @@ impl Component for CounterApp {
         };
         
         let increment_by = |amount: i32| {
-            let count = count;
             let set_count = set_count.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
@@ -76,12 +73,10 @@ impl Component for CounterApp {
         };
         
         // Determine counter color based on value
-        let counter_class = if count > 0 {
-            "positive"
-        } else if count < 0 {
-            "negative"
-        } else {
-            "zero"
+        let counter_class = match count.cmp(&0) {
+            std::cmp::Ordering::Greater => "positive",
+            std::cmp::Ordering::Less => "negative",
+            std::cmp::Ordering::Equal => "zero",
         };
 
         Element::Node {
@@ -290,7 +285,7 @@ impl Component for CounterApp {
                                 ..Default::default()
                             },
                             children: vec![
-                                create_stat("Status", if count > 0 { "Positive" } else if count < 0 { "Negative" } else { "Zero" }),
+                                create_stat("Status", match count.cmp(&0) { std::cmp::Ordering::Greater => "Positive", std::cmp::Ordering::Less => "Negative", std::cmp::Ordering::Equal => "Zero" }),
                                 create_stat("Distance from zero", &count.abs().to_string()),
                                 create_stat("Square", &(count * count).to_string()),
                             ],
@@ -700,6 +695,17 @@ const BEAUTIFUL_STYLES: &str = r#"
 pub fn main() -> Result<(), JsValue> {
     // Set panic hook for better error messages
     console_error_panic_hook::set_once();
+
+    // Hide loading indicator
+    if let Some(window) = web_sys::window() {
+        if let Some(document) = window.document() {
+            if let Some(loading) = document.query_selector(".loading").ok().flatten() {
+                if let Ok(element) = loading.dyn_into::<web_sys::HtmlElement>() {
+                    element.style().set_property("display", "none").ok();
+                }
+            }
+        }
+    }
 
     // Create and mount the app using the reactive renderer
     mount(Box::new(CounterApp), "root");

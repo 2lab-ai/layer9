@@ -1,7 +1,7 @@
 # Layer9 Ultrathink Makefile
 # AI-Driven Feature Development Pipeline
 
-.PHONY: all help update-feature-ultrathink ultrathink update-feature-ultrathink-old dev test build clean server validate ultra todo-list todo-status
+.PHONY: all help update-feature-ultrathink ultrathink update-feature-ultrathink-old dev test test-quick build clean server validate ultra todo-list todo-status watch fmt lint bench new-component commit-ai install ci deploy perf audit docs version
 
 # Colors for output
 RED := \033[0;31m
@@ -14,7 +14,11 @@ WHITE := \033[1;37m
 NC := \033[0m # No Color
 
 # Default target
-all: help
+all: lint build test
+	@echo ""
+	@echo "$(GREEN)═══════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)✅ ALL CHECKS PASSED! Layer9 is production ready!$(NC)"
+	@echo "$(GREEN)═══════════════════════════════════════════════════════════════$(NC)"
 
 # Help command
 help:
@@ -52,8 +56,8 @@ update-feature-ultrathink:
 	@TODO=$$(node scripts/ultrathink/select-todo.js) && \
 	echo "$(YELLOW)Selected: $$TODO$(NC)" && \
 	echo "" && \
-	echo "$(CYAN)Phase 3: Implementing feature with Claude AI...$(NC)" && \
-	node scripts/ultrathink/implement-feature-claude.js "$$TODO" && \
+	echo "$(CYAN)Phase 3: Implementing feature automatically...$(NC)" && \
+	node scripts/ultrathink/implement-feature-auto.js "$$TODO" && \
 	echo "" && \
 	echo "$(CYAN)Phase 4: Testing until success...$(NC)" && \
 	node scripts/ultrathink/test-until-success.js && \
@@ -114,9 +118,18 @@ build:
 
 # Run tests
 test:
-	@echo "$(CYAN)🧪 Running tests$(NC)"
-	npm run validate
-	@echo "$(GREEN)✅ Basic tests passed$(NC)"
+	@echo "$(CYAN)🧪 Running Comprehensive Test Suite$(NC)"
+	@node test/quick-comprehensive-test.js
+
+# Quick test (just final validation)
+test-quick:
+	@echo "$(CYAN)⚡ Running Quick Test$(NC)"
+	@npm run test:quick
+
+# Full test with compilation (slower)
+test-full:
+	@echo "$(CYAN)🧪 Running Full Test Suite (with compilation)$(NC)"
+	@node test/comprehensive-test-runner.js
 
 # Run validation
 validate:
