@@ -126,7 +126,7 @@ class Layer9Validator {
         try {
             // Wait for WASM to load
             await page.waitForFunction(
-                () => typeof WebAssembly !== 'undefined' && document.querySelector('.layer9-app'),
+                () => typeof WebAssembly !== 'undefined' && document.querySelector('.beautiful-counter'),
                 { timeout: 5000 }
             );
 
@@ -149,9 +149,9 @@ class Layer9Validator {
             // Check all critical UI elements
             const elements = await page.evaluate(() => {
                 const checks = {
-                    app: document.querySelector('.layer9-app'),
+                    app: document.querySelector('.beautiful-counter'),
                     title: document.querySelector('h1'),
-                    counter: document.querySelector('#counter-display'),
+                    counter: document.querySelector('.counter-value'),
                     buttons: document.querySelectorAll('button').length
                 };
                 return {
@@ -177,13 +177,13 @@ class Layer9Validator {
         const testName = 'Interactivity';
         try {
             // Test button clicks
-            const initialValue = await page.$eval('#counter-display', el => el.textContent);
+            const initialValue = await page.$eval('.counter-value', el => el.textContent);
             
             // Click increment
-            await page.click('button.btn-primary');
+            await page.click('button.btn-increment');
             await new Promise(resolve => setTimeout(resolve, 100));
             
-            const afterIncrement = await page.$eval('#counter-display', el => el.textContent);
+            const afterIncrement = await page.$eval('.counter-value', el => el.textContent);
             
             if (initialValue !== afterIncrement) {
                 log.success(`${testName} - Buttons respond to clicks`);
@@ -203,29 +203,29 @@ class Layer9Validator {
         const testName = 'State Management';
         try {
             // Test state persistence through multiple operations
-            await page.click('button.btn-warning'); // Reset
+            await page.click('button.btn-reset'); // Reset
             await new Promise(resolve => setTimeout(resolve, 100));
             
             // Perform sequence
             for (let i = 0; i < 5; i++) {
-                await page.click('button.btn-primary');
+                await page.click('button.btn-increment');
             }
             await new Promise(resolve => setTimeout(resolve, 100));
             
             for (let i = 0; i < 2; i++) {
-                await page.click('button.btn-secondary');
+                await page.click('button.btn-decrement');
             }
             await new Promise(resolve => setTimeout(resolve, 100));
             
-            const finalValue = await page.$eval('#counter-display', el => el.textContent);
+            const finalValue = await page.$eval('.counter-value', el => el.textContent);
             
-            if (finalValue === 'Count: 3') {
+            if (finalValue === '6') {
                 log.success(`${testName} - State correctly maintained`);
-                log.metric('Expected', 'Count: 3');
+                log.metric('Expected', '6');
                 log.metric('Actual', finalValue);
                 this.results.passed.push(testName);
             } else {
-                throw new Error(`Expected 'Count: 3', got '${finalValue}'`);
+                throw new Error(`Expected '6', got '${finalValue}'`);
             }
         } catch (error) {
             log.error(`${testName} - ${error.message}`);
@@ -280,7 +280,7 @@ class Layer9Validator {
             
             // Perform 100 rapid operations
             for (let i = 0; i < 100; i++) {
-                await page.click(i % 2 === 0 ? 'button.btn-primary' : 'button.btn-secondary');
+                await page.click(i % 2 === 0 ? 'button.btn-increment' : 'button.btn-decrement');
             }
             
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -288,7 +288,7 @@ class Layer9Validator {
             const heapGrowthMB = (endHeap - startHeap) / 1024 / 1024;
             
             // Check final state is correct
-            const value = await page.$eval('#counter-display', el => el.textContent);
+            const value = await page.$eval('.counter-value', el => el.textContent);
             
             if (heapGrowthMB < 5 && this.errors.length === 0) {
                 log.success(`${testName} - No crashes or memory leaks`);

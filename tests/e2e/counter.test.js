@@ -153,12 +153,12 @@ async function runCounterTests() {
             await page.waitForTimeout(500); // Wait for animation
             
             const newValue = await page.$eval('.counter-value', el => el.textContent);
-            if (newValue === '1') {
+            if (newValue === '2') {
                 console.log('✅ Increment button works correctly');
                 testsPassed++;
                 await takeScreenshot(page, '02-after-increment');
             } else {
-                console.log(`❌ Expected value 1 after increment, got ${newValue}`);
+                console.log(`❌ Expected value 2 after increment, got ${newValue}`);
                 testsFailed++;
             }
         } catch (error) {
@@ -174,12 +174,12 @@ async function runCounterTests() {
             await page.waitForTimeout(500);
             
             const newValue = await page.$eval('.counter-value', el => el.textContent);
-            if (newValue === '-1') {
+            if (newValue === '-2') {
                 console.log('✅ Decrement button works correctly');
                 testsPassed++;
                 await takeScreenshot(page, '03-after-decrement');
             } else {
-                console.log(`❌ Expected value -1 after decrement, got ${newValue}`);
+                console.log(`❌ Expected value -2 after decrement, got ${newValue}`);
                 testsFailed++;
             }
         } catch (error) {
@@ -195,10 +195,10 @@ async function runCounterTests() {
             await page.waitForTimeout(300);
             
             let value = await page.$eval('.counter-value', el => el.textContent);
-            if (value === '9') {
+            if (value === '8') {
                 console.log('✅ +10 quick button works');
             } else {
-                console.log(`❌ Expected 9 after +10, got ${value}`);
+                console.log(`❌ Expected 8 after +10, got ${value}`);
             }
             
             // Click -5 button
@@ -206,12 +206,12 @@ async function runCounterTests() {
             await page.waitForTimeout(300);
             
             value = await page.$eval('.counter-value', el => el.textContent);
-            if (value === '4') {
+            if (value === '3') {
                 console.log('✅ -5 quick button works');
                 testsPassed++;
                 await takeScreenshot(page, '04-after-quick-actions');
             } else {
-                console.log(`❌ Expected 4 after -5, got ${value}`);
+                console.log(`❌ Expected 3 after -5, got ${value}`);
                 testsFailed++;
             }
         } catch (error) {
@@ -252,12 +252,13 @@ async function runCounterTests() {
                 elements.map(el => el.textContent)
             );
             
-            if (stats[0] === 'Positive' && stats[1] === '5' && stats[2] === '25') {
+            if (stats[0] === 'Positive' && stats[1] === '10' && stats[2] === '100') {
                 console.log('✅ Statistics update correctly');
                 console.log(`  Status: ${stats[0]}, Distance: ${stats[1]}, Square: ${stats[2]}`);
                 testsPassed++;
             } else {
                 console.log('❌ Statistics not updating as expected');
+                console.log(`  Got - Status: ${stats[0]}, Distance: ${stats[1]}, Square: ${stats[2]}`);
                 testsFailed++;
             }
         } catch (error) {

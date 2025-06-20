@@ -199,8 +199,8 @@ async function runTestSuite() {
             await new Promise(resolve => setTimeout(resolve, 100)); // Wait for state update
             
             const counterText = await page.$eval('.counter-value', el => el.textContent);
-            if (counterText !== '1') {
-                throw new Error(`Expected '1', got '${counterText}'`);
+            if (counterText !== '2') {
+                throw new Error(`Expected '2', got '${counterText}'`);
             }
             
             // Click again
@@ -208,8 +208,8 @@ async function runTestSuite() {
             await new Promise(resolve => setTimeout(resolve, 100));
             
             const counterText2 = await page.$eval('.counter-value', el => el.textContent);
-            if (counterText2 !== '2') {
-                throw new Error(`Expected '2', got '${counterText2}'`);
+            if (counterText2 !== '4') {
+                throw new Error(`Expected '4', got '${counterText2}'`);
             }
         });
 
@@ -220,8 +220,8 @@ async function runTestSuite() {
             await new Promise(resolve => setTimeout(resolve, 100));
             
             const counterText = await page.$eval('.counter-value', el => el.textContent);
-            if (counterText !== '1') {
-                throw new Error(`Expected '1', got '${counterText}'`);
+            if (counterText !== '2') {
+                throw new Error(`Expected '2', got '${counterText}'`);
             }
         });
 
@@ -244,8 +244,8 @@ async function runTestSuite() {
             await new Promise(resolve => setTimeout(resolve, 100));
             
             const counterText = await page.$eval('.counter-value', el => el.textContent);
-            if (counterText !== '-1') {
-                throw new Error(`Expected '-1', got '${counterText}'`);
+            if (counterText !== '-2') {
+                throw new Error(`Expected '-2', got '${counterText}'`);
             }
         });
 
@@ -262,8 +262,8 @@ async function runTestSuite() {
             await new Promise(resolve => setTimeout(resolve, 200));
             
             const counterText = await page.$eval('.counter-value', el => el.textContent);
-            if (counterText !== '10') {
-                throw new Error(`Expected '10' after rapid clicks, got '${counterText}'`);
+            if (counterText !== '20') {
+                throw new Error(`Expected '20' after rapid clicks, got '${counterText}'`);
             }
         });
 

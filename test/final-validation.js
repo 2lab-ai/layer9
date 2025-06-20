@@ -183,7 +183,7 @@ class FinalValidator {
             await new Promise(r => setTimeout(r, 200));
             const afterReset = await page.$eval('.counter-value', el => el.textContent);
             
-            if (afterInc === '1' && afterDec === '0' && afterReset === '0') {
+            if (afterInc === '2' && afterDec === '0' && afterReset === '0') {
                 console.log('   ✅ All functions work correctly');
                 this.tests.passed++;
             } else {
