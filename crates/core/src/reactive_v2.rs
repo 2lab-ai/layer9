@@ -4,10 +4,11 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
 use web_sys::{Element as DomElement, Node};
+use wasm_bindgen::JsCast;
 
 use crate::component::{Component, Element};
+use crate::vdom::VDom;
 
 type PendingEffect = (ComponentId, Box<dyn FnOnce() -> EffectCleanup>);
 
@@ -45,6 +46,7 @@ pub struct Renderer {
     next_id: ComponentId,
     is_rendering: bool,
     root_element: Option<DomElement>,
+    vdom: VDom,
 }
 
 impl Renderer {
@@ -55,6 +57,7 @@ impl Renderer {
             next_id: 1,
             is_rendering: false,
             root_element: None,
+            vdom: VDom::new(),
         }
     }
 
@@ -161,8 +164,16 @@ impl Renderer {
         // Perform diffing and patching
         if let Some(old_vdom) = old_vdom {
             // Diff and patch existing DOM
-            let patches = self.diff_elements(&old_vdom, &new_vdom);
-            self.apply_patches(component_id, patches);
+            let patches = self.vdom.diff(&old_vdom, &new_vdom, &[]);
+            
+            // Apply patches to the DOM node
+            if let Some(instance) = self.components.get(&component_id) {
+                if let Some(dom_node) = &instance.dom_node {
+                    if let Some(element) = dom_node.dyn_ref::<DomElement>() {
+                        self.vdom.apply_patches(&patches, element);
+                    }
+                }
+            }
             
             // Update stored VDOM
             if let Some(instance) = self.components.get_mut(&component_id) {
@@ -193,172 +204,37 @@ impl Renderer {
         }
     }
 
-    /// Diff two virtual DOM elements
-    fn diff_elements(&self, old: &Element, new: &Element) -> Vec<Patch> {
-        let mut patches = Vec::new();
-        self.diff_recursive(old, new, &[], &mut patches);
-        patches
+
+
+
+
+
+
+
+    /// Register a component for testing
+    pub fn register_component(
+        &mut self,
+        component: Box<dyn Component>,
+        parent_id: Option<ComponentId>,
+    ) -> ComponentId {
+        let component_id = self.create_component_instance(component, parent_id);
+        self.render_component(component_id);
+        self.run_pending_effects();
+        component_id
     }
-
-    /// Recursive diffing algorithm
-    fn diff_recursive(
-        &self,
-        old: &Element,
-        new: &Element,
-        path: &[usize],
-        patches: &mut Vec<Patch>,
-    ) {
-        match (old, new) {
-            (Element::Text(old_text), Element::Text(new_text)) => {
-                if old_text != new_text {
-                    patches.push(Patch::UpdateText {
-                        path: path.to_vec(),
-                        text: new_text.clone(),
-                    });
-                }
-            }
-            (
-                Element::Node { tag: old_tag, props: old_props, children: old_children },
-                Element::Node { tag: new_tag, props: new_props, children: new_children },
-            ) => {
-                if old_tag != new_tag {
-                    // Different tags - replace entire element
-                    patches.push(Patch::Replace {
-                        path: path.to_vec(),
-                        element: new.clone(),
-                    });
-                } else {
-                    // Same tag - check if props changed
-                    let props_changed = self.diff_props(old_props, new_props, path, patches);
-                    
-                    if props_changed {
-                        // Replace entire element if props changed (especially event handlers)
-                        patches.push(Patch::Replace {
-                            path: path.to_vec(),
-                            element: new.clone(),
-                        });
-                    } else {
-                        // Props unchanged, just diff children
-                        self.diff_children(old_children, new_children, path, patches);
-                    }
-                }
-            }
-            _ => {
-                // Different types - replace
-                patches.push(Patch::Replace {
-                    path: path.to_vec(),
-                    element: new.clone(),
-                });
-            }
-        }
-    }
-
-    /// Diff properties  
-    fn diff_props(
-        &self,
-        old_props: &crate::component::Props,
-        new_props: &crate::component::Props,
-        _path: &[usize],
-        _patches: &mut [Patch],
-    ) -> bool {
-        // Check if props have changed
-        old_props.class != new_props.class
-            || old_props.id != new_props.id
-            || match (&old_props.on_click, &new_props.on_click) {
-                (Some(old_click), Some(new_click)) => !Rc::ptr_eq(old_click, new_click),
-                (None, None) => false,
-                _ => true,
-            }
-    }
-
-    /// Diff children
-    fn diff_children(
-        &self,
-        old_children: &[Element],
-        new_children: &[Element],
-        path: &[usize],
-        patches: &mut Vec<Patch>,
-    ) {
-        let max_len = old_children.len().max(new_children.len());
-
-        for i in 0..max_len {
-            let mut child_path = path.to_vec();
-            child_path.push(i);
-
-            match (old_children.get(i), new_children.get(i)) {
-                (Some(old_child), Some(new_child)) => {
-                    self.diff_recursive(old_child, new_child, &child_path, patches);
-                }
-                (Some(_), None) => {
-                    patches.push(Patch::RemoveChild {
-                        path: path.to_vec(),
-                        index: i,
-                    });
-                }
-                (None, Some(new_child)) => {
-                    patches.push(Patch::InsertChild {
-                        path: path.to_vec(),
-                        index: i,
-                        element: new_child.clone(),
-                    });
-                }
-                (None, None) => unreachable!(),
-            }
-        }
-    }
-
-    /// Apply patches to the DOM
-    fn apply_patches(&mut self, component_id: ComponentId, patches: Vec<Patch>) {
-        for patch in patches {
-            self.apply_patch(component_id, patch);
-        }
-    }
-
-    /// Apply a single patch
-    fn apply_patch(&mut self, component_id: ComponentId, patch: Patch) {
-        // Get the DOM node first to avoid borrow issues
-        let dom_node = self.components.get(&component_id)
-            .and_then(|instance| instance.dom_node.clone());
+    
+    /// Process the render queue
+    pub fn process_queue(&mut self) {
+        // Take ownership of the queue to avoid borrowing issues
+        let queue = std::mem::take(&mut self.render_queue);
+        self.is_rendering = true;
         
-        match patch {
-            Patch::UpdateText { path, text } => {
-                if let Some(node) = self.find_node_at_path(&dom_node, &path) {
-                    node.set_text_content(Some(&text));
-                }
-            }
-            Patch::Replace { path, element } => {
-                if let Some(node) = self.find_node_at_path(&dom_node, &path) {
-                    let new_node = element.to_dom();
-                    if let Some(parent) = node.parent_node() {
-                        parent.replace_child(&new_node, &node).unwrap();
-                    }
-                }
-            }
-            Patch::InsertChild { path, index: _, element } => {
-                if let Some(node) = self.find_node_at_path(&dom_node, &path) {
-                    let new_child = element.to_dom();
-                    node.append_child(&new_child).unwrap();
-                }
-            }
-            Patch::RemoveChild { path, index } => {
-                if let Some(node) = self.find_node_at_path(&dom_node, &path) {
-                    if let Some(child) = node.child_nodes().get(index as u32) {
-                        node.remove_child(&child).unwrap();
-                    }
-                }
-            }
-        }
-    }
-
-    /// Find a DOM node at a specific path
-    fn find_node_at_path(&self, root: &Option<Node>, path: &[usize]) -> Option<Node> {
-        let mut current = root.clone()?;
-        
-        for &index in path {
-            current = current.child_nodes().get(index as u32)?;
+        for component_id in queue {
+            self.render_component(component_id);
         }
         
-        Some(current)
+        self.is_rendering = false;
+        self.run_pending_effects();
     }
 
     /// Clean up a component and its children
@@ -394,28 +270,6 @@ impl Renderer {
     }
 }
 
-/// Patch operations for DOM updates
-#[derive(Debug, Clone)]
-enum Patch {
-    UpdateText {
-        path: Vec<usize>,
-        text: String,
-    },
-    Replace {
-        path: Vec<usize>,
-        element: Element,
-    },
-    InsertChild {
-        path: Vec<usize>,
-        #[allow(dead_code)]
-        index: usize,
-        element: Element,
-    },
-    RemoveChild {
-        path: Vec<usize>,
-        index: usize,
-    },
-}
 
 thread_local! {
     /// Current component ID (used by hooks)
@@ -488,4 +342,218 @@ pub fn mount(component: Box<dyn Component>, root_id: &str) {
             renderer.mount_root(component, root_id);
         }
     });
+}
+
+#[cfg(test)]
+#[allow(dead_code)]
+mod tests {
+    use super::*;
+    use crate::component::{Component, Element, Props};
+    use std::rc::Rc;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    // Test component that tracks render count
+    #[cfg(test)]
+    struct TestComponent {
+        render_count: Rc<RefCell<u32>>,
+    }
+
+    impl Component for TestComponent {
+        fn render(&self) -> Element {
+            *self.render_count.borrow_mut() += 1;
+            Element::Text(format!("Render count: {}", self.render_count.borrow()))
+        }
+    }
+
+    #[wasm_bindgen_test]
+    fn test_renderer_initialization() {
+        init_renderer();
+        
+        RENDERER.with(|r| {
+            assert!(r.borrow().is_some(), "Renderer should be initialized");
+        });
+    }
+
+    #[wasm_bindgen_test]
+    fn test_component_lifecycle() {
+        init_renderer();
+        
+        let render_count = Rc::new(RefCell::new(0));
+        let component = Box::new(TestComponent {
+            render_count: render_count.clone(),
+        });
+        
+        let component_id = RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.register_component(component, None)
+        });
+        
+        // Component should render once on registration
+        assert_eq!(*render_count.borrow(), 1);
+        
+        // Queue render
+        queue_component_render(component_id);
+        
+        // Process render queue
+        RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.process_queue();
+        });
+        
+        // Should have rendered again
+        assert_eq!(*render_count.borrow(), 2);
+        
+        // Unmount component
+        RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.unmount_component(component_id);
+        });
+        
+        // Component should be removed
+        RENDERER.with(|r| {
+            let renderer = r.borrow();
+            let renderer = renderer.as_ref().unwrap();
+            assert!(!renderer.components.contains_key(&component_id));
+        });
+    }
+
+    #[wasm_bindgen_test]
+    fn test_parent_child_relationships() {
+        init_renderer();
+        
+        struct ParentComponent {
+            child_id: RefCell<Option<ComponentId>>,
+        }
+        
+        impl Component for ParentComponent {
+            fn render(&self) -> Element {
+                Element::Node {
+                    tag: "div".to_string(),
+                    props: Props::default(),
+                    children: vec![Element::Component(Box::new(ChildComponent))],
+                }
+            }
+        }
+        
+        struct ChildComponent;
+        
+        impl Component for ChildComponent {
+            fn render(&self) -> Element {
+                Element::Text("Child".to_string())
+            }
+        }
+        
+        let parent_id = RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.register_component(Box::new(ParentComponent {
+                child_id: RefCell::new(None),
+            }), None)
+        });
+        
+        // Check parent has children
+        RENDERER.with(|r| {
+            let renderer = r.borrow();
+            let renderer = renderer.as_ref().unwrap();
+            let parent = renderer.components.get(&parent_id).unwrap();
+            assert!(!parent.child_ids.is_empty(), "Parent should have children");
+        });
+    }
+
+    #[wasm_bindgen_test]
+    fn test_effect_execution() {
+        init_renderer();
+        
+        let effect_ran = Rc::new(RefCell::new(false));
+        let effect_ran_clone = effect_ran.clone();
+        let cleanup_ran = Rc::new(RefCell::new(false));
+        let cleanup_ran_clone = cleanup_ran.clone();
+        
+        struct EffectComponent {
+            effect_ran: Rc<RefCell<bool>>,
+            cleanup_ran: Rc<RefCell<bool>>,
+        }
+        
+        impl Component for EffectComponent {
+            fn render(&self) -> Element {
+                let effect_ran = self.effect_ran.clone();
+                let cleanup_ran = self.cleanup_ran.clone();
+                
+                queue_effect_for_current_component(move || {
+                    *effect_ran.borrow_mut() = true;
+                    Box::new(move || {
+                        *cleanup_ran.borrow_mut() = true;
+                    })
+                });
+                
+                Element::Text("Effect component".to_string())
+            }
+        }
+        
+        let component_id = RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.register_component(Box::new(EffectComponent {
+                effect_ran: effect_ran_clone.clone(),
+                cleanup_ran: cleanup_ran_clone.clone(),
+            }), None)
+        });
+        
+        // Process pending effects
+        RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.run_pending_effects();
+        });
+        
+        assert!(*effect_ran.borrow(), "Effect should have run");
+        
+        // Unmount to trigger cleanup
+        RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.unmount_component(component_id);
+        });
+        
+        assert!(*cleanup_ran.borrow(), "Cleanup should have run");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_render_queue_deduplication() {
+        init_renderer();
+        
+        let render_count = Rc::new(RefCell::new(0));
+        let component = Box::new(TestComponent {
+            render_count: render_count.clone(),
+        });
+        
+        let component_id = RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.register_component(component, None)
+        });
+        
+        // Reset render count
+        *render_count.borrow_mut() = 0;
+        
+        // Queue multiple renders
+        queue_component_render(component_id);
+        queue_component_render(component_id);
+        queue_component_render(component_id);
+        
+        // Process queue
+        RENDERER.with(|r| {
+            let mut renderer = r.borrow_mut();
+            let renderer = renderer.as_mut().unwrap();
+            renderer.process_queue();
+        });
+        
+        // Should only render once despite multiple queues
+        assert_eq!(*render_count.borrow(), 1, "Component should render only once");
+    }
 }
