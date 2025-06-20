@@ -3,7 +3,7 @@
 //! A stunning counter showcasing Layer9's reactive features with modern UI design
 
 use layer9_core::prelude::*;
-use layer9_core::hooks::use_state;
+use layer9_core::hooks::{use_state, use_reducer};
 use layer9_core::reactive_v2::mount;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -12,12 +12,31 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+// Counter actions
+#[derive(Clone)]
+enum CounterAction {
+    Increment,
+    Decrement,
+    IncrementBy(i32),
+    Reset,
+}
+
 // Beautiful counter component
 struct CounterApp;
 
 impl Component for CounterApp {
     fn render(&self) -> Element {
-        let (count, set_count) = use_state(0i32);
+        // Use reducer for proper state updates
+        let (count, dispatch) = use_reducer(
+            |state: &i32, action: CounterAction| match action {
+                CounterAction::Increment => state + 2,
+                CounterAction::Decrement => state - 2,
+                CounterAction::IncrementBy(amount) => state + amount,
+                CounterAction::Reset => 0,
+            },
+            0i32,
+        );
+        
         let (animation_class, set_animation_class) = use_state(String::new());
         
         // Helper to trigger animation
@@ -37,37 +56,37 @@ impl Component for CounterApp {
         };
         
         let increment = {
-            let set_count = set_count.clone();
+            let dispatch = dispatch.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
-                set_count(count + 1);
+                dispatch(CounterAction::Increment);
                 trigger_animation("up");
             }
         };
         
         let decrement = {
-            let set_count = set_count.clone();
+            let dispatch = dispatch.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
-                set_count(count - 1);
+                dispatch(CounterAction::Decrement);
                 trigger_animation("down");
             }
         };
         
         let increment_by = |amount: i32| {
-            let set_count = set_count.clone();
+            let dispatch = dispatch.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
-                set_count(count + amount);
+                dispatch(CounterAction::IncrementBy(amount));
                 trigger_animation("up");
             }
         };
         
         let reset = {
-            let set_count = set_count.clone();
+            let dispatch = dispatch.clone();
             let trigger_animation = trigger_animation.clone();
             move || {
-                set_count(0);
+                dispatch(CounterAction::Reset);
                 trigger_animation("reset");
             }
         };
