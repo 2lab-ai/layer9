@@ -1,6 +1,7 @@
 //! Comprehensive tests for file upload module
 
 #[cfg(test)]
+#[cfg(target_arch = "wasm32")]
 mod tests {
     use super::super::upload::*;
     use wasm_bindgen_test::*;

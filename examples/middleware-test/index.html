@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Middleware Chain Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        #output {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .test-section {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #2196F3;
+            background-color: #f0f8ff;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .info {
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Layer9 Middleware Chain Test</h1>
+    <p>This test demonstrates proper middleware chaining where each middleware can call the next one in the chain.</p>
+    <div id="output">Loading WebAssembly module...</div>
+
+    <script type="module">
+        // Override console.log to capture output
+        const output = document.getElementById('output');
+        const originalLog = console.log;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+            
+            // Style the output based on content
+            if (message.includes('===')) {
+                output.innerHTML += `<div class="test-section">${message}</div>`;
+            } else if (message.includes('Success!')) {
+                output.innerHTML += `<div class="success">${message}</div>`;
+            } else if (message.includes('Error:')) {
+                output.innerHTML += `<div class="error">${message}</div>`;
+            } else if (message.includes('Middleware')) {
+                output.innerHTML += `<div class="info">${message}</div>`;
+            } else {
+                output.innerHTML += message + '\n';
+            }
+        };
+
+        // Load the WASM module
+        import('./pkg/middleware_test.js').then(module => {
+            output.innerHTML = 'WebAssembly module loaded. Running tests...\n\n';
+        }).catch(err => {
+            output.innerHTML = `<div class="error">Failed to load WebAssembly module: ${err}</div>`;
+            console.error(err);
+        });
+    </script>
+</body>
+</html>

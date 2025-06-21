@@ -26,6 +26,4 @@ crate-type = ["cdylib", "rlib"]
 default = ["ssr"]
 ssr = ["layer9-core/ssr"]
 
-[profile.release]
-opt-level = "z"
-lto = true
+# Profile settings should be in workspace root Cargo.toml

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Reconnection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .log {
+            background: #f4f4f4;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #ddd;
+        }
+        .log-entry.info { border-color: #3498db; }
+        .log-entry.success { border-color: #2ecc71; }
+        .log-entry.error { border-color: #e74c3c; }
+        .log-entry.warning { border-color: #f39c12; }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.connecting { background: #fff3cd; color: #856404; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Reconnection Test</h1>
+    
+    <div id="status" class="status disconnected">Disconnected</div>
+    
+    <div>
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <button onclick="forceClose()">Force Close (Simulate Error)</button>
+        <button onclick="sendMessage()">Send Test Message</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <h3>Configuration</h3>
+    <div>
+        <label>Max Reconnect Attempts: <input type="number" id="maxAttempts" value="5" min="1" max="10"></label><br>
+        <label>Base Reconnect Interval (ms): <input type="number" id="baseInterval" value="1000" min="100" max="10000"></label>
+    </div>
+    
+    <h3>Log</h3>
+    <div id="log" class="log"></div>
+
+    <script type="module">
+        // Simple WebSocket reconnection implementation for testing
+        class ReconnectingWebSocket {
+            constructor(url, config = {}) {
+                this.url = url;
+                this.config = {
+                    maxReconnectAttempts: config.maxReconnectAttempts || 5,
+                    reconnectInterval: config.reconnectInterval || 1000,
+                    ...config
+                };
+                this.reconnectAttempts = 0;
+                this.reconnectTimer = null;
+                this.ws = null;
+                this.handlers = {
+                    onopen: null,
+                    onmessage: null,
+                    onerror: null,
+                    onclose: null
+                };
+            }
+
+            connect() {
+                this.log('info', `Connecting to ${this.url}...`);
+                this.updateStatus('connecting');
+                
+                try {
+                    this.ws = new WebSocket(this.url);
+                    this.setupHandlers();
+                } catch (e) {
+                    this.log('error', `Failed to create WebSocket: ${e.message}`);
+                    this.scheduleReconnect();
+                }
+            }
+
+            setupHandlers() {
+                this.ws.onopen = () => {
+                    this.log('success', 'Connected!');
+                    this.updateStatus('connected');
+                    this.reconnectAttempts = 0;
+                    if (this.handlers.onopen) this.handlers.onopen();
+                };
+
+                this.ws.onmessage = (event) => {
+                    this.log('info', `Received: ${event.data}`);
+                    if (this.handlers.onmessage) this.handlers.onmessage(event);
+                };
+
+                this.ws.onerror = (event) => {
+                    this.log('error', 'WebSocket error occurred');
+                    if (this.handlers.onerror) this.handlers.onerror(event);
+                };
+
+                this.ws.onclose = (event) => {
+                    this.log('warning', `Disconnected (code: ${event.code}, reason: ${event.reason || 'none'})`);
+                    this.updateStatus('disconnected');
+                    if (this.handlers.onclose) this.handlers.onclose(event);
+                    
+                    // Handle reconnection for abnormal closures
+                    if (event.code !== 1000) {
+                        this.scheduleReconnect();
+                    }
+                };
+            }
+
+            scheduleReconnect() {
+                // Clear any existing timer
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                }
+
+                if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
+                    this.log('error', `Max reconnection attempts (${this.config.maxReconnectAttempts}) reached. Giving up.`);
+                    return;
+                }
+
+                // Calculate delay with exponential backoff
+                const delay = this.config.reconnectInterval * Math.pow(2, Math.min(this.reconnectAttempts, 10));
+                this.reconnectAttempts++;
+                
+                this.log('info', `Scheduling reconnection attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts} in ${delay}ms...`);
+                
+                this.reconnectTimer = setTimeout(() => {
+                    this.log('info', `Reconnection attempt ${this.reconnectAttempts}...`);
+                    this.connect();
+                }, delay);
+            }
+
+            send(data) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(data);
+                    this.log('info', `Sent: ${data}`);
+                } else {
+                    this.log('error', 'Cannot send - not connected');
+                }
+            }
+
+            close() {
+                // Clear any pending reconnection
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                    this.reconnectTimer = null;
+                }
+                
+                if (this.ws) {
+                    this.ws.close(1000, 'Normal closure');
+                }
+            }
+
+            forceClose() {
+                // Simulate abnormal closure
+                if (this.ws) {
+                    this.ws.close(1006, 'Abnormal closure');
+                }
+            }
+
+            log(level, message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${level}`;
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                document.getElementById('log').appendChild(logEntry);
+                
+                // Auto-scroll to bottom
+                const logDiv = document.getElementById('log');
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+
+            updateStatus(status) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = `status ${status}`;
+                statusDiv.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            }
+        }
+
+        // Global WebSocket instance
+        let ws = null;
+
+        window.connect = function() {
+            if (ws) {
+                ws.close();
+            }
+            
+            const maxAttempts = parseInt(document.getElementById('maxAttempts').value);
+            const baseInterval = parseInt(document.getElementById('baseInterval').value);
+            
+            // Use a test WebSocket server or your own
+            // For testing, you can use: wss://echo.websocket.org/
+            ws = new ReconnectingWebSocket('wss://echo.websocket.org/', {
+                maxReconnectAttempts: maxAttempts,
+                reconnectInterval: baseInterval
+            });
+            
+            ws.connect();
+        };
+
+        window.disconnect = function() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        };
+
+        window.forceClose = function() {
+            if (ws) {
+                ws.forceClose();
+            }
+        };
+
+        window.sendMessage = function() {
+            if (ws) {
+                const message = `Test message ${Date.now()}`;
+                ws.send(message);
+            }
+        };
+
+        window.clearLog = function() {
+            document.getElementById('log').innerHTML = '';
+        };
+
+        // Auto-connect on load
+        window.addEventListener('load', () => {
+            connect();
+        });
+    </script>
+</body>
+</html>

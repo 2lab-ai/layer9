@@ -20,6 +20,12 @@ members = [
     "examples/memory-game",
     "examples/auth-upload",
     "examples/ssr-demo",
+    "examples/forms-demo",
+    "examples/middleware-test",
+    "examples/auth-jwt-demo",
+    "examples/database-crud",
+    "examples/image-optimization",
+    "examples/css-showcase",
     # "examples/github-dashboard", # TODO: Fix view! macro syntax
 ]
 
@@ -50,6 +56,13 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "fs"] }
 
 [profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Single codegen unit for better optimization
+panic = "abort"     # Use abort instead of unwind
+strip = true        # Strip symbols
+
+# Also optimize dependencies
+[profile.release.package."*"]
 opt-level = "z"
-lto = true
-codegen-units = 1
+strip = true

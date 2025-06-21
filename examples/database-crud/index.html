@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer9 Database CRUD Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        
+        #app {
+            min-height: 100vh;
+        }
+        
+        .crud-app {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        input, textarea, button {
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        .user-card, .post-card {
+            transition: box-shadow 0.2s ease;
+        }
+        
+        .user-card:hover, .post-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">Loading...</div>
+    <script type="module">
+        import init from './pkg/database_crud.js';
+        
+        async function run() {
+            await init();
+        }
+        
+        run();
+    </script>
+</body>
+</html>

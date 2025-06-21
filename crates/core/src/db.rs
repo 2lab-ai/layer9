@@ -732,24 +732,91 @@ impl DatabaseConnection for PostgresConnection {
     }
 }
 
+/// Database backend type
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DatabaseBackend {
+    Postgres,
+    Sqlite,
+    InMemory,
+}
+
 /// Hook for database operations
 #[cfg(not(target_arch = "wasm32"))]
 pub fn use_db() -> Box<dyn DatabaseConnection> {
     #[cfg(feature = "ssr")]
     {
-        match crate::db_sqlx::use_db_server() {
-            Ok(conn) => Box::new(conn),
-            Err(_) => {
-                // Fallback to HTTP connection if SQLx is not available
-                let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
-                Box::new(PostgresConnection::new(api_url).with_auth("dummy-token"))
+        // Check environment variable for database type
+        let db_type = crate::env::env_or("DATABASE_TYPE", "sqlite");
+        let db_url = crate::env::env_or("DATABASE_URL", "sqlite::memory:");
+        
+        match db_type.as_str() {
+            "postgres" | "postgresql" => {
+                match crate::db_sqlx::use_db_server() {
+                    Ok(conn) => Box::new(conn),
+                    Err(_) => {
+                        // Fallback to creating new connection
+                        match futures::executor::block_on(crate::db_sqlx::SqlxConnection::new(&db_url)) {
+                            Ok(conn) => Box::new(conn),
+                            Err(_) => {
+                                // Final fallback to HTTP connection
+                                let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+                                let auth_token = crate::env::env_or("DATABASE_API_TOKEN", "dummy-token");
+                                Box::new(PostgresConnection::new(api_url).with_auth(auth_token))
+                            }
+                        }
+                    }
+                }
+            }
+            "sqlite" => {
+                match futures::executor::block_on(crate::db_sqlite::SqliteConnection::new(&db_url)) {
+                    Ok(conn) => {
+                        // Initialize default schema for new databases
+                        if db_url.contains(":memory:") || !std::path::Path::new(&db_url.replace("sqlite:", "")).exists() {
+                            let _ = futures::executor::block_on(crate::db_sqlite::create_default_schema(&conn));
+                        }
+                        Box::new(conn)
+                    }
+                    Err(_) => {
+                        // Fallback to HTTP connection
+                        let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+                        let auth_token = crate::env::env_or("DATABASE_API_TOKEN", "dummy-token");
+                        Box::new(PostgresConnection::new(api_url).with_auth(auth_token))
+                    }
+                }
+            }
+            "memory" => {
+                // Use SQLite in-memory as the memory backend
+                match futures::executor::block_on(crate::db_sqlite::SqliteConnection::in_memory()) {
+                    Ok(conn) => {
+                        let _ = futures::executor::block_on(crate::db_sqlite::create_default_schema(&conn));
+                        Box::new(conn)
+                    }
+                    Err(_) => {
+                        let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+                        Box::new(PostgresConnection::new(api_url).with_auth("dummy-token"))
+                    }
+                }
+            }
+            _ => {
+                // Default to SQLite
+                match futures::executor::block_on(crate::db_sqlite::SqliteConnection::in_memory()) {
+                    Ok(conn) => {
+                        let _ = futures::executor::block_on(crate::db_sqlite::create_default_schema(&conn));
+                        Box::new(conn)
+                    }
+                    Err(_) => {
+                        let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
+                        Box::new(PostgresConnection::new(api_url).with_auth("dummy-token"))
+                    }
+                }
             }
         }
     }
     #[cfg(not(feature = "ssr"))]
     {
         let api_url = crate::env::env_or("DATABASE_API_URL", "http://localhost:3001/db");
-        Box::new(PostgresConnection::new(api_url).with_auth("dummy-token"))
+        let auth_token = crate::env::env_or("DATABASE_API_TOKEN", "dummy-token");
+        Box::new(PostgresConnection::new(api_url).with_auth(auth_token))
     }
 }
 
@@ -757,7 +824,8 @@ pub fn use_db() -> Box<dyn DatabaseConnection> {
 #[cfg(target_arch = "wasm32")]
 pub fn use_db() -> PostgresConnection {
     let api_url = crate::env::env_or("DATABASE_API_URL", "/api/db");
-    PostgresConnection::new(api_url).with_auth("dummy-token")
+    let auth_token = crate::env::env_or("DATABASE_API_TOKEN", "dummy-token");
+    PostgresConnection::new(api_url).with_auth(auth_token)
 }
 
 /// Hook for repository (client-side WASM)

@@ -1,0 +1,12 @@
+[package]
+name = "css-showcase"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+layer9-core = { path = "../../crates/core" }
+wasm-bindgen = "0.2"
+web-sys = "0.3"
+
+[lib]
+crate-type = ["cdylib"]

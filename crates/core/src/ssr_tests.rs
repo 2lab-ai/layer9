@@ -1,6 +1,7 @@
 //! SSR Tests
 
 #[cfg(test)]
+#[cfg(feature = "ssr")]
 mod tests {
     use crate::ssr::*;
     use std::collections::HashMap;

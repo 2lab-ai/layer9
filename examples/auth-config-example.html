@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Layer9 Authentication Configuration Example</title>
+    <script>
+        // Example: Configure Layer9 authentication before loading the app
+        window.LAYER9_CONFIG = {
+            // Set JWT secret from environment or server-side injection
+            jwtSecret: "your-production-jwt-secret-here",
+            
+            // Set to true to use mock authentication for development
+            useMockAuth: false
+        };
+        
+        // In production, you might inject this from server-side:
+        // window.LAYER9_CONFIG = {
+        //     jwtSecret: process.env.JWT_SECRET,
+        //     useMockAuth: process.env.NODE_ENV === 'development'
+        // };
+    </script>
+</head>
+<body>
+    <h1>Layer9 Authentication Configuration Example</h1>
+    
+    <div id="app">
+        <h2>Configuration Options</h2>
+        <ul>
+            <li><strong>JWT Secret:</strong> Configure via <code>window.LAYER9_CONFIG.jwtSecret</code></li>
+            <li><strong>Mock Auth:</strong> Enable mock authentication via <code>window.LAYER9_CONFIG.useMockAuth</code></li>
+            <li><strong>Environment Variables:</strong> Set <code>LAYER9_JWT_SECRET</code> and <code>LAYER9_USE_MOCK_AUTH</code></li>
+        </ul>
+        
+        <h2>Usage Examples</h2>
+        
+        <h3>1. Default Configuration (Production-ready)</h3>
+        <pre><code>// Simply use AuthService::default()
+let auth_service = AuthService::default();
+// This will use JwtAuthProvider with the configured secret</code></pre>
+        
+        <h3>2. Explicit Configuration</h3>
+        <pre><code>// Create config programmatically
+let config = ConfigBuilder::new()
+    .jwt_secret("my-secret".to_string())
+    .use_mock_auth(false)
+    .build();
+
+let auth_service = AuthService::with_config(&config);</code></pre>
+        
+        <h3>3. Testing with Mock Provider</h3>
+        <pre><code>// For tests, enable mock auth
+window.LAYER9_CONFIG = {
+    useMockAuth: true
+};
+
+// Or use directly
+let auth_service = AuthService::with_mock_provider();</code></pre>
+        
+        <h3>4. Environment Variable Configuration</h3>
+        <pre><code># .env file
+LAYER9_JWT_SECRET=your-secret-key-here
+LAYER9_USE_MOCK_AUTH=false</code></pre>
+    </div>
+    
+    <script type="module">
+        // Example of checking current configuration
+        if (window.LAYER9_CONFIG) {
+            console.log("Layer9 Configuration:", window.LAYER9_CONFIG);
+            
+            const configInfo = document.createElement('div');
+            configInfo.innerHTML = `
+                <h3>Current Configuration</h3>
+                <p>JWT Secret: ${window.LAYER9_CONFIG.jwtSecret ? 'Configured' : 'Using default'}</p>
+                <p>Mock Auth: ${window.LAYER9_CONFIG.useMockAuth ? 'Enabled' : 'Disabled'}</p>
+            `;
+            document.getElementById('app').appendChild(configInfo);
+        }
+    </script>
+</body>
+</html>

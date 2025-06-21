@@ -18,15 +18,22 @@ pub mod auth;
 #[cfg(test)]
 mod auth_tests;
 #[cfg(test)]
+mod auth_config_tests;
+#[cfg(test)]
 mod auth_upload_integration_tests;
 pub mod cache;
+pub mod config;
 pub mod jwt;
 pub mod component;
+pub mod css_runtime;
+pub mod styled_component;
 pub mod db;
 #[cfg(feature = "ssr")]
 pub mod db_api;
 #[cfg(feature = "ssr")]
 pub mod db_sqlx;
+#[cfg(feature = "ssr")]
+pub mod db_sqlite;
 pub mod env;
 pub mod error;
 pub mod fetch;
@@ -36,8 +43,14 @@ pub mod form_builder;
 pub mod hooks;
 pub mod i18n;
 pub mod image;
+pub mod image_lazy;
+#[cfg(feature = "ssr")]
+pub mod image_transform;
+#[cfg(feature = "ssr")]
+pub mod image_handler;
 pub mod layers;
 pub mod middleware;
+pub mod middleware_v2;
 pub mod monitoring;
 // pub mod reactive; // Using v2 to fix borrowing issues
 pub mod reactive_v2;
@@ -58,6 +71,9 @@ pub mod upload;
 mod upload_tests;
 pub mod vdom;
 pub mod websocket;
+
+// HAF (Hierarchical Architecture First) system
+pub mod haf;
 
 pub mod prelude {
     pub use crate::api_docs::{ApiDoc, OpenApiBuilder, SchemaBuilder};
@@ -81,6 +97,7 @@ pub mod prelude {
     };
     pub use crate::i18n::{use_i18n, Locale};
     pub use crate::image::{Image, Picture};
+    pub use crate::image_lazy::{LazyImage, LazyLoadManager, use_lazy_image};
     pub use crate::layers::*;
     pub use crate::middleware::{Context, Middleware, MiddlewareStack};
     pub use crate::monitoring::{use_analytics, use_metrics, use_performance};
@@ -102,6 +119,11 @@ pub mod prelude {
         // Note: use_effect is now provided by hooks module
     };
     pub use crate::styles::{inject_global_styles, style, StyleBuilder};
+    pub use crate::css_runtime::{
+        css_props, inject_global_styles as inject_css_runtime, 
+        Animation, Breakpoint, CssBuilder, CssVariables
+    };
+    pub use crate::styled_component::{styled, ComponentStyling, StyledComponent, styles};
     pub use crate::test::{TestContext, TestResult, TestUtils};
     pub use crate::ui::*;
     pub use crate::upload::{FileUpload, FileUploadManager, UploadStatus};

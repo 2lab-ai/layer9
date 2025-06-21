@@ -1,0 +1,14 @@
+[package]
+name = "middleware-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+layer9-core = { path = "../../crates/core" }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["console", "Window", "Document", "HtmlElement", "Event"] }
+async-trait = "0.1"
+
+[lib]
+crate-type = ["cdylib"]

@@ -15,7 +15,7 @@ fi
 # Build the example
 echo "🔨 Building Counter Example..."
 cd examples/counter
-wasm-pack build --target web --out-dir pkg
+wasm-pack build --target web --out-dir pkg --release
 
 # Serve the example
 echo "🌐 Starting development server..."

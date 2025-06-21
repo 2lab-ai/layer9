@@ -1,0 +1,37 @@
+[package]
+name = "database-crud"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+layer9-core = { path = "../../crates/core", features = ["ssr"] }
+layer9-macro = { path = "../../crates/macro" }
+
+# Web
+wasm-bindgen = "0.2"
+web-sys = "0.3"
+js-sys = "0.3"
+
+# Async
+wasm-bindgen-futures = "0.4"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.6"
+
+# Server dependencies
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1", features = ["full"] }
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "fs"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+required-features = ["layer9-core/ssr"]

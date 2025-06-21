@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer9 Image Optimization Demo</title>
+    <meta name="description" content="Comprehensive demonstration of Layer9's image optimization capabilities">
+    
+    <!-- Preconnect to image optimization service -->
+    <link rel="preconnect" href="/_layer9/image">
+    
+    <!-- Preload critical images -->
+    <link rel="preload" as="image" href="/_layer9/image?src=/images/hero.jpg&w=1920&q=90">
+    
+    <style>
+        /* Critical CSS for immediate render */
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        #app {
+            min-height: 100vh;
+        }
+        
+        /* Placeholder for images while loading */
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        img.loading {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Initial loading state -->
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+            <div style="text-align: center;">
+                <h1>Loading Image Optimization Demo...</h1>
+                <div style="margin-top: 20px;">
+                    <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #333; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <!-- Load the WASM module -->
+    <script type="module">
+        import init from './pkg/image_optimization_example.js';
+        
+        async function run() {
+            await init();
+        }
+        
+        run();
+    </script>
+    
+    <!-- Fallback for browsers without module support -->
+    <script nomodule>
+        document.getElementById('app').innerHTML = '<p>This demo requires a modern browser with ES6 module support.</p>';
+    </script>
+</body>
+</html>

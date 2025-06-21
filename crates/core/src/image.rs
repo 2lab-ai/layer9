@@ -116,24 +116,33 @@ impl Image {
             return srcset.clone();
         }
 
-        // Generate responsive srcset
-        let base_url = self.optimize_url(&self.src);
+        // Generate responsive srcset with Layer9 optimization
         let widths = [640, 750, 828, 1080, 1200, 1920, 2048, 3840];
 
         widths
             .iter()
-            .map(|&w| format!("{} {}w", self.optimize_url_with_width(&base_url, w), w))
+            .map(|&w| format!("{} {}w", self.optimize_url_with_width(&self.src, w), w))
             .collect::<Vec<_>>()
             .join(", ")
     }
 
     fn optimize_url(&self, url: &str) -> String {
-        // In production, this would use an image CDN
-        if url.starts_with("http") {
+        // Use Layer9 image optimization endpoint
+        if self.width.is_some() || self.height.is_some() || self.quality != 75 {
+            let mut params = vec![];
+            
+            if let Some(w) = self.width {
+                params.push(format!("w={}", w));
+            }
+            if let Some(h) = self.height {
+                params.push(format!("h={}", h));
+            }
+            params.push(format!("q={}", self.quality));
+            
             format!(
-                "/_next/image?url={}&q={}",
+                "/_layer9/image?src={}&{}",
                 urlencoding::encode(url),
-                self.quality
+                params.join("&")
             )
         } else {
             url.to_string()
@@ -141,7 +150,12 @@ impl Image {
     }
 
     fn optimize_url_with_width(&self, url: &str, width: u32) -> String {
-        format!("{}&w={}", url, width)
+        format!(
+            "/_layer9/image?src={}&w={}&q={}",
+            urlencoding::encode(url),
+            width,
+            self.quality
+        )
     }
 }
 

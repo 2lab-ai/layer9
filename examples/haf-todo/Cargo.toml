@@ -1,0 +1,27 @@
+[package]
+name = "haf-todo"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+layer9-core = { path = "../../crates/core" }
+wasm-bindgen = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+console_error_panic_hook = "0.1"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+    "Document",
+    "Element",
+    "HtmlElement",
+    "Window",
+    "console",
+]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"

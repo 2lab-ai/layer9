@@ -1,0 +1,20 @@
+# Target-specific configuration should be in Cargo.toml
+
+[build]
+target-dir = "target"
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-bindgen-test-runner"
+
+[profile.release]
+# Optimize for size
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# Additional size optimizations
+[profile.release.package."*"]
+opt-level = "z"
+strip = true

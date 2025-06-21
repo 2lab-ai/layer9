@@ -20,6 +20,7 @@ web-sys = { version = "0.3", features = [
     "PopStateEvent",
     "Storage",
     "HtmlInputElement",
+    "HtmlImageElement",
     "File",
     "FileList",
     "FormData",
@@ -50,6 +51,8 @@ web-sys = { version = "0.3", features = [
     "HtmlStyleElement",
     "Crypto",
     "NodeList",
+    "CssStyleDeclaration",
+    "DomTokenList",
 ] }
 js-sys = "0.3"
 
@@ -73,14 +76,23 @@ urlencoding = "2.1"
 sha2 = "0.10"
 base64 = "0.22"
 regex = "1.11"
+parking_lot = "0.12"
+
+# Image processing (server-side only)
+image = { version = "0.25", optional = true }
+imageproc = { version = "0.25", optional = true }
+webp = { version = "0.3", optional = true }
+ravif = { version = "0.11", optional = true }
 
 # For SSR
 axum = { version = "0.7", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 tower = { version = "0.4", optional = true }
 tower-http = { version = "0.5", features = ["fs"], optional = true }
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "json"], optional = true }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "sqlite", "json"], optional = true }
 uuid = { version = "1", features = ["v4"], optional = true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
+html-escape = "0.2.13"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
@@ -90,5 +102,7 @@ wasm-bindgen-test = "0.3"
 
 [features]
 default = []
-ssr = ["axum", "tokio", "tower", "tower-http", "sqlx", "uuid"]
+ssr = ["axum", "tokio", "tower", "tower-http", "sqlx", "uuid", "image", "imageproc", "webp", "ravif", "reqwest"]
 wasm = []
+haf = []
+haf-strict = ["haf"]

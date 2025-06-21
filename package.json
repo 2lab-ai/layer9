@@ -19,7 +19,7 @@
     "test:ci": "node test/ci-test-suite.js",
     "validate": "node test/fixed-validator.js",
     "ultra": "node test/ultra-validator.js",
-    "build:example": "cd examples/counter && wasm-pack build --target web --out-dir pkg && cd ../.. && npm run build:optimize",
+    "build:example": "cd examples/counter && wasm-pack build --target web --out-dir pkg --release && cd ../.. && npm run build:optimize",
     "serve:example": "cargo run --manifest-path crates/layer9-server/Cargo.toml -- --dir examples/counter --port 8080",
     "dev": "node scripts/dev-server.js",
     "dev:simple": "npm run build:example && npm run serve:example",
@@ -46,6 +46,6 @@
   },
   "homepage": "https://github.com/2lab-ai/layer9#readme",
   "devDependencies": {
-    "puppeteer": "^24.10.1"
+    "puppeteer": "^24.10.2"
   }
 }
