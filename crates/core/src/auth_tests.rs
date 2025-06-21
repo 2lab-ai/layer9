@@ -1,6 +1,7 @@
 //! Comprehensive tests for authentication module
 
 #[cfg(test)]
+#[cfg(target_arch = "wasm32")]
 mod tests {
     use crate::auth::*;
     use wasm_bindgen_test::*;
@@ -170,26 +171,26 @@ mod tests {
         let provider = JwtAuthProvider::new("test-secret".to_string());
         
         // Test admin permissions
-        let admin_perms = provider.get_permissions_for_roles(&vec!["admin".to_string()]);
+        let admin_perms = provider.get_permissions_for_roles(&["admin".to_string()]);
         assert!(admin_perms.contains(&"read".to_string()));
         assert!(admin_perms.contains(&"write".to_string()));
         assert!(admin_perms.contains(&"delete".to_string()));
         assert!(admin_perms.contains(&"admin".to_string()));
         
         // Test user permissions
-        let user_perms = provider.get_permissions_for_roles(&vec!["user".to_string()]);
+        let user_perms = provider.get_permissions_for_roles(&["user".to_string()]);
         assert!(user_perms.contains(&"read".to_string()));
         assert!(user_perms.contains(&"write".to_string()));
         assert!(!user_perms.contains(&"delete".to_string()));
         assert!(!user_perms.contains(&"admin".to_string()));
         
         // Test guest permissions
-        let guest_perms = provider.get_permissions_for_roles(&vec!["guest".to_string()]);
+        let guest_perms = provider.get_permissions_for_roles(&["guest".to_string()]);
         assert!(guest_perms.contains(&"read".to_string()));
         assert!(!guest_perms.contains(&"write".to_string()));
         
         // Test multiple roles
-        let multi_perms = provider.get_permissions_for_roles(&vec!["user".to_string(), "guest".to_string()]);
+        let multi_perms = provider.get_permissions_for_roles(&["user".to_string(), "guest".to_string()]);
         assert!(multi_perms.contains(&"read".to_string()));
         assert!(multi_perms.contains(&"write".to_string()));
     }

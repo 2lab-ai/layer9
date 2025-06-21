@@ -1,5 +1,6 @@
 //! Authentication support for Layer9
 
+use crate::config::Config;
 use crate::jwt::{Jwt, JwtClaims};
 use sha2::{Digest, Sha256};
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -301,6 +302,16 @@ impl AuthService {
     pub fn with_mock_provider() -> Self {
         Self::new(Box::new(MockAuthProvider))
     }
+    
+    /// Create an AuthService with configuration
+    pub fn with_config(config: &Config) -> Self {
+        if config.should_use_mock_auth() {
+            Self::with_mock_provider()
+        } else {
+            let secret = config.get_jwt_secret();
+            Self::with_jwt_provider(secret)
+        }
+    }
 
     pub async fn login(&mut self, username: &str, password: &str) -> Result<(), String> {
         let (user, token) = self.provider.authenticate(username, password)?;
@@ -402,7 +413,16 @@ impl std::fmt::Debug for AuthService {
 
 impl Default for AuthService {
     fn default() -> Self {
-        Self::with_mock_provider()
+        let config = Config::get_or_init();
+        
+        if config.should_use_mock_auth() {
+            // Use mock provider for testing
+            Self::with_mock_provider()
+        } else {
+            // Use JWT provider with configured or default secret
+            let secret = config.get_jwt_secret();
+            Self::with_jwt_provider(secret)
+        }
     }
 }
 

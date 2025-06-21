@@ -1,6 +1,7 @@
 //! Integration tests for authentication and file upload working together
 
 #[cfg(test)]
+#[cfg(target_arch = "wasm32")]
 mod tests {
     use crate::auth::{AuthService, JwtAuthProvider};
     use crate::upload::{FileUploadManager, FileUploadComponent};
