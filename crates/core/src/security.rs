@@ -183,6 +183,40 @@ impl ContentSecurityPolicy {
             .collect::<Vec<_>>()
             .join("; ")
     }
+    
+    pub fn to_header(&self) -> String {
+        if self.directives.is_empty() {
+            "default-src 'self'".to_string()
+        } else {
+            self.build()
+        }
+    }
+    
+    pub fn with_nonce(&self) -> (String, String) {
+        use base64::Engine;
+        // Generate a simple random nonce for the CSP
+        let mut bytes = vec![0u8; 16];
+        for byte in &mut bytes {
+            *byte = (js_sys::Math::random() * 255.0) as u8;
+        }
+        let nonce = base64::engine::general_purpose::STANDARD.encode(bytes);
+        let mut csp = self.clone();
+        
+        // Add nonce to script-src
+        let script_sources = csp.directives.entry("script-src".to_string())
+            .or_insert_with(|| vec!["'self'".to_string()]);
+        script_sources.push(format!("'nonce-{}'", nonce));
+        
+        (nonce.clone(), csp.to_header())
+    }
+}
+
+impl Clone for ContentSecurityPolicy {
+    fn clone(&self) -> Self {
+        ContentSecurityPolicy {
+            directives: self.directives.clone(),
+        }
+    }
 }
 
 /// XSS protection
@@ -451,12 +485,120 @@ impl SubresourceIntegrity {
     }
 }
 
+/// Frame options for X-Frame-Options header
+pub enum FrameOptions {
+    Deny,
+    SameOrigin,
+    AllowFrom(String),
+}
+
+/// Referrer policy options
+pub enum ReferrerPolicy {
+    NoReferrer,
+    NoReferrerWhenDowngrade,
+    Origin,
+    OriginWhenCrossOrigin,
+    SameOrigin,
+    StrictOrigin,
+    StrictOriginWhenCrossOrigin,
+    UnsafeUrl,
+}
+
+/// Permissions policy configuration
+pub struct PermissionsPolicy {
+    directives: HashMap<String, Vec<String>>,
+}
+
+impl Default for PermissionsPolicy {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PermissionsPolicy {
+    pub fn new() -> Self {
+        PermissionsPolicy {
+            directives: HashMap::new(),
+        }
+    }
+    
+    pub fn camera(mut self, allowed: Vec<&str>) -> Self {
+        self.directives.insert("camera".to_string(), allowed.into_iter().map(|s| s.to_string()).collect());
+        self
+    }
+    
+    pub fn microphone(mut self, allowed: Vec<&str>) -> Self {
+        self.directives.insert("microphone".to_string(), allowed.into_iter().map(|s| s.to_string()).collect());
+        self
+    }
+    
+    pub fn geolocation(mut self, allowed: Vec<&str>) -> Self {
+        self.directives.insert("geolocation".to_string(), allowed.into_iter().map(|s| s.to_string()).collect());
+        self
+    }
+    
+    pub fn to_header(&self) -> String {
+        self.directives.iter()
+            .map(|(feature, allowed)| {
+                if allowed.is_empty() {
+                    format!("{}=()", feature)
+                } else {
+                    format!("{}=({})", feature, allowed.join(" "))
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+/// Input sanitizer
+pub struct InputSanitizer;
+
+impl Default for InputSanitizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl InputSanitizer {
+    pub fn new() -> Self {
+        InputSanitizer
+    }
+    
+    pub fn sanitize(&self, input: &str) -> String {
+        XssProtection::sanitize_html(input)
+    }
+    
+    pub fn sanitize_html(&self, input: &str) -> String {
+        XssProtection::sanitize_html(input)
+    }
+    
+    pub fn sanitize_url(&self, input: &str) -> String {
+        XssProtection::sanitize_url(input)
+    }
+    
+    pub fn is_valid_email(&self, input: &str) -> bool {
+        InputValidator::email(input).is_ok()
+    }
+}
+
 /// Security headers configuration
 pub struct SecurityHeaders {
     headers: HashMap<String, String>,
 }
 
+impl Default for SecurityHeaders {
+    fn default() -> Self {
+        Self::secure_defaults()
+    }
+}
+
 impl SecurityHeaders {
+    pub fn new() -> Self {
+        SecurityHeaders {
+            headers: HashMap::new(),
+        }
+    }
     pub fn secure_defaults() -> Self {
         let mut headers = HashMap::new();
 
@@ -494,6 +636,38 @@ impl SecurityHeaders {
             .insert("Content-Security-Policy".to_string(), csp.build());
         self
     }
+    
+    pub fn frame_options(mut self, option: FrameOptions) -> Self {
+        let value = match option {
+            FrameOptions::Deny => "DENY",
+            FrameOptions::SameOrigin => "SAMEORIGIN",
+            FrameOptions::AllowFrom(url) => return {
+                self.headers.insert("X-Frame-Options".to_string(), format!("ALLOW-FROM {}", url));
+                self
+            },
+        };
+        self.headers.insert("X-Frame-Options".to_string(), value.to_string());
+        self
+    }
+    
+    pub fn referrer_policy(mut self, policy: ReferrerPolicy) -> Self {
+        let value = match policy {
+            ReferrerPolicy::NoReferrer => "no-referrer",
+            ReferrerPolicy::NoReferrerWhenDowngrade => "no-referrer-when-downgrade",
+            ReferrerPolicy::Origin => "origin",
+            ReferrerPolicy::OriginWhenCrossOrigin => "origin-when-cross-origin",
+            ReferrerPolicy::SameOrigin => "same-origin",
+            ReferrerPolicy::StrictOrigin => "strict-origin",
+            ReferrerPolicy::StrictOriginWhenCrossOrigin => "strict-origin-when-cross-origin",
+            ReferrerPolicy::UnsafeUrl => "unsafe-url",
+        };
+        self.headers.insert("Referrer-Policy".to_string(), value.to_string());
+        self
+    }
+    
+    pub fn to_headers(&self) -> HashMap<String, String> {
+        self.headers.clone()
+    }
 
     pub fn build(&self) -> HashMap<String, String> {
         self.headers.clone()
@@ -524,6 +698,11 @@ impl SecurityContext {
     pub fn verify_csrf(&self, token: &str) -> bool {
         self.csrf.verify_token(token)
     }
+    
+    pub fn security_headers(&self) -> SecurityHeaders {
+        SecurityHeaders::secure_defaults()
+            .add_csp(self._csp.clone())
+    }
 }
 
 /// Security hooks
@@ -538,3 +717,157 @@ pub fn use_csrf_token() -> String {
 
 // Re-exports
 use regex;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(target_arch = "wasm32")]
+    fn test_csrf_token_generation() {
+        let csrf = CsrfProtection::new("test-secret");
+        let token1 = csrf.generate_token();
+        let token2 = csrf.generate_token();
+        
+        // Tokens should be unique
+        assert_ne!(token1, token2);
+        
+        // Tokens should be base64 encoded
+        assert!(general_purpose::STANDARD.decode(&token1).is_ok());
+        assert!(general_purpose::STANDARD.decode(&token2).is_ok());
+    }
+
+    #[test]
+    #[cfg(target_arch = "wasm32")]
+    fn test_csrf_token_verification() {
+        let csrf = CsrfProtection::new("test-secret");
+        let token = csrf.generate_token();
+        
+        // Valid token should verify
+        assert!(csrf.verify_token(&token));
+        
+        // Invalid token should fail
+        assert!(!csrf.verify_token("invalid-token"));
+        
+        // Empty token should fail
+        assert!(!csrf.verify_token(""));
+    }
+
+    #[test]
+    fn test_csp_header_generation() {
+        let csp = ContentSecurityPolicy::new();
+        let header = csp.to_header();
+        
+        assert!(header.contains("default-src 'self'"));
+        
+        // Test with custom directives
+        let custom_csp = ContentSecurityPolicy::new()
+            .default_src(vec!["'self'", "https:"])
+            .script_src(vec!["'self'", "'unsafe-inline'"])
+            .style_src(vec!["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"])
+            .connect_src(vec!["'self'", "wss:", "https:"]);
+            
+        let custom_header = custom_csp.to_header();
+        assert!(custom_header.contains("default-src 'self' https:"));
+        assert!(custom_header.contains("script-src 'self' 'unsafe-inline'"));
+        assert!(custom_header.contains("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"));
+        assert!(custom_header.contains("connect-src 'self' wss: https:"));
+    }
+
+    #[test]
+    #[cfg(target_arch = "wasm32")]
+    fn test_nonce_generation() {
+        let csp = ContentSecurityPolicy::new();
+        let (nonce1, header1) = csp.with_nonce();
+        let (nonce2, header2) = csp.with_nonce();
+        
+        // Nonces should be unique
+        assert_ne!(nonce1, nonce2);
+        
+        // Nonces should be in the header
+        assert!(header1.contains(&format!("'nonce-{}'", nonce1)));
+        assert!(header2.contains(&format!("'nonce-{}'", nonce2)));
+    }
+
+
+    #[test]
+    fn test_security_headers() {
+        let headers = SecurityHeaders::default();
+        let header_map = headers.to_headers();
+        
+        // Check default headers
+        assert_eq!(header_map.get("X-Frame-Options"), Some(&"DENY".to_string()));
+        assert_eq!(header_map.get("X-Content-Type-Options"), Some(&"nosniff".to_string()));
+        assert_eq!(header_map.get("X-XSS-Protection"), Some(&"1; mode=block".to_string()));
+        assert_eq!(header_map.get("Referrer-Policy"), Some(&"strict-origin-when-cross-origin".to_string()));
+        
+        // Custom headers
+        let custom_headers = SecurityHeaders::new()
+            .frame_options(FrameOptions::SameOrigin)
+            .referrer_policy(ReferrerPolicy::NoReferrer);
+            
+        let custom_map = custom_headers.to_headers();
+        assert_eq!(custom_map.get("X-Frame-Options"), Some(&"SAMEORIGIN".to_string()));
+        assert_eq!(custom_map.get("Referrer-Policy"), Some(&"no-referrer".to_string()));
+    }
+
+    #[test]
+    fn test_permissions_policy() {
+        let policy = PermissionsPolicy::new();
+        let header = policy.to_header();
+        
+        // Default should be empty
+        assert_eq!(header, "");
+        
+        // With features
+        let custom_policy = PermissionsPolicy::new()
+            .camera(vec!["'none'"])
+            .microphone(vec!["'self'"])
+            .geolocation(vec!["'self'", "https://maps.example.com"]);
+            
+        let custom_header = custom_policy.to_header();
+        assert!(custom_header.contains("camera=('none')"));
+        assert!(custom_header.contains("microphone=('self')"));
+        assert!(custom_header.contains("geolocation=('self' https://maps.example.com)"));
+    }
+
+    #[test]
+    fn test_input_sanitization() {
+        let sanitizer = InputSanitizer::new();
+        
+        // HTML sanitization
+        assert_eq!(
+            sanitizer.sanitize_html("<script>alert('xss')</script>Hello"),
+            "&lt;script&gt;alert(&#x27;xss&#x27;)&lt;&#x2F;script&gt;Hello"
+        );
+        
+        // URL sanitization
+        assert_eq!(
+            sanitizer.sanitize_url("javascript:alert('xss')"),
+            "#"
+        );
+        assert_eq!(
+            sanitizer.sanitize_url("https://example.com"),
+            "https%3A%2F%2Fexample.com"
+        );
+        
+        // Email validation
+        assert!(sanitizer.is_valid_email("test@example.com"));
+        assert!(!sanitizer.is_valid_email("invalid-email"));
+        assert!(!sanitizer.is_valid_email("test@"));
+    }
+
+    #[test]
+    #[cfg(target_arch = "wasm32")]
+    fn test_security_context() {
+        let ctx = SecurityContext::new("test-secret");
+        
+        // Headers should be set
+        assert!(!ctx.security_headers().to_headers().is_empty());
+        
+        // CSRF token generation and verification
+        let token = ctx.csrf_token();
+        assert!(ctx.verify_csrf(&token));
+        assert!(!ctx.verify_csrf("invalid-token"));
+    }
+}

@@ -5,8 +5,6 @@ use crate::prelude::*;
 use crate::router_v2::RouteParams;
 use async_trait::async_trait;
 use std::cell::RefCell;
-use std::future::Future;
-use std::pin::Pin;
 use std::rc::Rc;
 
 // Type alias to simplify complex types
@@ -80,13 +78,10 @@ impl Response {
 /// State container for middleware
 pub type State = HashMap<String, Box<dyn std::any::Any>>;
 
-/// Next function type
-pub type Next = Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<Response, MiddlewareError>>>>>;
-
-/// Middleware trait
+/// Middleware trait - simplified version
 #[async_trait(?Send)]
 pub trait Middleware: 'static {
-    async fn handle(&self, ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError>;
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError>;
 }
 
 /// Middleware error
@@ -129,35 +124,53 @@ impl MiddlewareStack {
     }
 
     pub async fn run(&self, mut ctx: Context) -> Result<Response, MiddlewareError> {
-        self.run_middleware(0, &mut ctx).await
-    }
-
-    fn run_middleware<'a>(
-        &'a self,
-        index: usize,
-        ctx: &'a mut Context,
-    ) -> Pin<Box<dyn Future<Output = Result<Response, MiddlewareError>> + 'a>> {
-        Box::pin(async move {
-            if index >= self.middlewares.len() {
-                // No more middleware, return response
-                Ok(ctx.response.clone())
-            } else {
-                // Simple solution: just run middleware sequentially
-                let middleware = &self.middlewares[index];
-                let placeholder_next: Next = Box::new(|| Box::pin(async { Ok(Response::new()) }));
-
-                // Run this middleware
-                let result = middleware.handle(ctx, placeholder_next).await?;
-                ctx.response = result;
-
-                // Continue to next middleware
-                self.run_middleware(index + 1, ctx).await
-            }
-        })
+        // Run each middleware in sequence
+        for middleware in &self.middlewares {
+            let result = middleware.handle(&mut ctx).await?;
+            ctx.response = result;
+        }
+        
+        // Return the final response
+        Ok(ctx.response)
     }
 }
 
-/// Common middleware implementations
+/// Wrapper for middleware that needs to call next
+pub struct ChainedMiddleware<M> {
+    middleware: M,
+    next: Option<Box<dyn Middleware>>,
+}
+
+impl<M: Middleware> ChainedMiddleware<M> {
+    pub fn new(middleware: M) -> Self {
+        ChainedMiddleware {
+            middleware,
+            next: None,
+        }
+    }
+    
+    pub fn chain(mut self, next: impl Middleware) -> Self {
+        self.next = Some(Box::new(next));
+        self
+    }
+}
+
+#[async_trait(?Send)]
+impl<M: Middleware> Middleware for ChainedMiddleware<M> {
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
+        // Run this middleware
+        let result = self.middleware.handle(ctx).await?;
+        ctx.response = result;
+        
+        // Run next middleware if exists
+        if let Some(next) = &self.next {
+            next.handle(ctx).await
+        } else {
+            Ok(ctx.response.clone())
+        }
+    }
+}
+
 /// Authentication middleware
 pub struct AuthMiddleware {
     verify_token: VerifyTokenFn,
@@ -173,7 +186,7 @@ impl AuthMiddleware {
 
 #[async_trait(?Send)]
 impl Middleware for AuthMiddleware {
-    async fn handle(&self, ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError> {
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
         // Check for auth header
         if let Some(auth_header) = ctx.request.headers.get("Authorization") {
             if let Some(token) = auth_header.strip_prefix("Bearer ") {
@@ -183,8 +196,8 @@ impl Middleware for AuthMiddleware {
             }
         }
 
-        // Continue to next middleware
-        next().await
+        // Return the existing response (middleware should be chained properly)
+        Ok(ctx.response.clone())
     }
 }
 
@@ -224,7 +237,7 @@ impl CorsMiddleware {
 
 #[async_trait(?Send)]
 impl Middleware for CorsMiddleware {
-    async fn handle(&self, ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError> {
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
         // Handle preflight
         if ctx.request.method == Method::OPTIONS {
             return Ok(Response::new()
@@ -241,12 +254,11 @@ impl Middleware for CorsMiddleware {
         }
 
         // Add CORS headers to response
-        let mut response = next().await?;
-        response
+        ctx.response
             .headers
             .insert("Access-Control-Allow-Origin".to_string(), "*".to_string());
 
-        Ok(response)
+        Ok(ctx.response.clone())
     }
 }
 
@@ -274,7 +286,7 @@ impl RateLimitMiddleware {
 
 #[async_trait(?Send)]
 impl Middleware for RateLimitMiddleware {
-    async fn handle(&self, ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError> {
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
         let now = js_sys::Date::now() as u64;
         let client_id = ctx
             .request
@@ -310,17 +322,16 @@ impl Middleware for RateLimitMiddleware {
         };
 
         // Add rate limit headers
-        let mut response = next().await?;
-        response.headers.insert(
+        ctx.response.headers.insert(
             "X-RateLimit-Limit".to_string(),
             self.max_requests.to_string(),
         );
-        response.headers.insert(
+        ctx.response.headers.insert(
             "X-RateLimit-Remaining".to_string(),
             (self.max_requests - current_count).to_string(),
         );
 
-        Ok(response)
+        Ok(ctx.response.clone())
     }
 }
 
@@ -347,22 +358,21 @@ impl LoggingMiddleware {
 
 #[async_trait(?Send)]
 impl Middleware for LoggingMiddleware {
-    async fn handle(&self, ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError> {
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
         let start = js_sys::Date::now();
 
-        let response = next().await?;
-
+        // Log after processing (in real chain, this would be after next())
         let duration_ms = js_sys::Date::now() - start;
 
         (self.logger)(LogEntry {
             method: format!("{:?}", ctx.request.method),
             url: ctx.request.url.clone(),
-            status: response.status,
+            status: ctx.response.status,
             duration_ms,
             user_id: ctx.request.user.as_ref().map(|u| u.id.clone()),
         });
 
-        Ok(response)
+        Ok(ctx.response.clone())
     }
 }
 
@@ -371,20 +381,18 @@ pub struct CompressionMiddleware;
 
 #[async_trait(?Send)]
 impl Middleware for CompressionMiddleware {
-    async fn handle(&self, ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError> {
-        let mut response = next().await?;
-
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
         // Check if client accepts gzip
         if let Some(accept_encoding) = ctx.request.headers.get("Accept-Encoding") {
-            if accept_encoding.contains("gzip") && response.body.is_some() {
+            if accept_encoding.contains("gzip") && ctx.response.body.is_some() {
                 // In real implementation, compress the body
-                response
+                ctx.response
                     .headers
                     .insert("Content-Encoding".to_string(), "gzip".to_string());
             }
         }
 
-        Ok(response)
+        Ok(ctx.response.clone())
     }
 }
 
@@ -393,29 +401,27 @@ pub struct SecurityMiddleware;
 
 #[async_trait(?Send)]
 impl Middleware for SecurityMiddleware {
-    async fn handle(&self, _ctx: &mut Context, next: Next) -> Result<Response, MiddlewareError> {
-        let mut response = next().await?;
-
+    async fn handle(&self, ctx: &mut Context) -> Result<Response, MiddlewareError> {
         // Add security headers
-        response
+        ctx.response
             .headers
             .insert("X-Content-Type-Options".to_string(), "nosniff".to_string());
-        response
+        ctx.response
             .headers
             .insert("X-Frame-Options".to_string(), "DENY".to_string());
-        response
+        ctx.response
             .headers
             .insert("X-XSS-Protection".to_string(), "1; mode=block".to_string());
-        response.headers.insert(
+        ctx.response.headers.insert(
             "Referrer-Policy".to_string(),
             "strict-origin-when-cross-origin".to_string(),
         );
-        response.headers.insert(
+        ctx.response.headers.insert(
             "Content-Security-Policy".to_string(),
             "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".to_string()
         );
 
-        Ok(response)
+        Ok(ctx.response.clone())
     }
 }
 
