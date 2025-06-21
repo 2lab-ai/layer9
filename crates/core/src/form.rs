@@ -51,6 +51,7 @@ pub fn use_form<T: Clone + Default + 'static>(config: FormConfig<T>) -> Form<T> 
 }
 
 /// Form handle
+#[derive(Clone)]
 pub struct Form<T> {
     state: Rc<RefCell<FormState<T>>>,
     config: Rc<FormConfig<T>>,
@@ -224,20 +225,24 @@ pub mod validators {
 }
 
 /// Form field components
-pub struct TextField {
+pub struct TextField<T> {
     name: String,
     label: String,
     placeholder: Option<String>,
-    _form: Rc<RefCell<dyn FormField>>,
+    form: Option<Form<T>>,
+    value: String,
+    error: Option<String>,
 }
 
-impl TextField {
+impl<T: Clone + FormFields + 'static> TextField<T> {
     pub fn new(name: impl Into<String>, label: impl Into<String>) -> Self {
         TextField {
             name: name.into(),
             label: label.into(),
             placeholder: None,
-            _form: Rc::new(RefCell::new(EmptyFormField)),
+            form: None,
+            value: String::new(),
+            error: None,
         }
     }
 
@@ -246,14 +251,30 @@ impl TextField {
         self
     }
 
-    pub fn bind<T>(self, _form: &Form<T>) -> Self {
-        // Bind to form
+    pub fn bind(mut self, form: &Form<T>) -> Self {
+        self.form = Some(form.clone());
+        // Get initial value from form
+        if let Some(value) = form.values().get_field(&self.name) {
+            self.value = value;
+        }
+        // Get any errors
+        if let Some(errors) = form.errors().get(&self.name) {
+            self.error = errors.first().cloned();
+        }
         self
     }
 }
 
-impl Component for TextField {
+impl<T: Clone + FormFields + 'static> Component for TextField<T> {
     fn render(&self) -> Element {
+        let form_clone = self.form.clone();
+        let field_name = self.name.clone();
+        
+        let on_change = form_clone.map(|form| Rc::new(move |value: String| {
+            form.set_field_value(&field_name, value);
+            form.set_field_touched(&field_name, true);
+        }) as Rc<dyn Fn(String)>);
+
         Element::Node {
             tag: "div".to_string(),
             props: Props {
@@ -277,11 +298,13 @@ impl Component for TextField {
                             ("type".to_string(), "text".to_string()),
                             ("id".to_string(), self.name.clone()),
                             ("name".to_string(), self.name.clone()),
+                            ("value".to_string(), self.value.clone()),
                             (
                                 "placeholder".to_string(),
                                 self.placeholder.as_deref().unwrap_or("").to_string(),
                             ),
                         ],
+                        on_change,
                         ..Default::default()
                     },
                     children: vec![],
@@ -292,7 +315,11 @@ impl Component for TextField {
                         class: Some("form-error".to_string()),
                         ..Default::default()
                     },
-                    children: vec![],
+                    children: if let Some(error) = &self.error {
+                        vec![Element::Text(error.clone())]
+                    } else {
+                        vec![]
+                    },
                 },
             ],
         }
@@ -307,6 +334,7 @@ trait FormField {
     fn get_errors(&self) -> Vec<String>;
 }
 
+#[allow(dead_code)]
 struct EmptyFormField;
 impl FormField for EmptyFormField {
     fn get_value(&self) -> String {
@@ -378,8 +406,9 @@ impl<T: Clone + 'static> Component for FormComponent<T> {
         Element::Node {
             tag: "form".to_string(),
             props: Props {
-                attributes: vec![("onsubmit".to_string(), "event.preventDefault()".to_string())],
-                on_click: Some(Rc::new(on_submit)),
+                on_submit: Some(Rc::new(move |_event| {
+                    on_submit();
+                })),
                 ..Default::default()
             },
             children: self.children.clone(),

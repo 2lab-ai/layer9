@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element as DomElement, HtmlElement, MouseEvent, Node};
+use web_sys::{Element as DomElement, Event, HtmlElement, HtmlInputElement, MouseEvent, Node};
 
 /// Virtual DOM Element
 #[derive(Clone)]
@@ -40,7 +40,62 @@ pub struct Props {
     pub class: Option<String>,
     pub id: Option<String>,
     pub on_click: Option<Rc<dyn Fn()>>,
+    pub on_submit: Option<Rc<dyn Fn(Event)>>,
+    pub on_change: Option<Rc<dyn Fn(String)>>,
+    pub on_input: Option<Rc<dyn Fn(String)>>,
     pub attributes: Vec<(String, String)>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::RefCell;
+
+    #[test]
+    fn test_onchange_event_handling() {
+        // Test that on_change prop is correctly set
+        let handler_called = Rc::new(RefCell::new(false));
+        let handler_ref = handler_called.clone();
+        
+        let props = Props {
+            on_change: Some(Rc::new(move |_value: String| {
+                *handler_ref.borrow_mut() = true;
+            })),
+            ..Default::default()
+        };
+        
+        // Verify on_change is set
+        assert!(props.on_change.is_some());
+        
+        // Test the handler
+        if let Some(handler) = props.on_change {
+            handler("test".to_string());
+            assert!(*handler_called.borrow());
+        }
+    }
+
+    #[test] 
+    fn test_view_macro_with_onchange() {
+        let value_changed = Rc::new(RefCell::new(String::new()));
+        let value_ref = value_changed.clone();
+        
+        let element = Element::Node {
+            tag: "input".to_string(),
+            props: Props {
+                on_change: Some(Rc::new(move |v: String| {
+                    *value_ref.borrow_mut() = v;
+                })),
+                ..Props::default()
+            },
+            children: vec![],
+        };
+        
+        // Verify the element structure
+        if let Element::Node { tag, props, .. } = element {
+            assert_eq!(tag, "input");
+            assert!(props.on_change.is_some());
+        }
+    }
 }
 
 impl std::fmt::Debug for Props {
@@ -49,6 +104,9 @@ impl std::fmt::Debug for Props {
             .field("class", &self.class)
             .field("id", &self.id)
             .field("on_click", &self.on_click.as_ref().map(|_| "Fn()"))
+            .field("on_submit", &self.on_submit.as_ref().map(|_| "Fn(Event)"))
+            .field("on_change", &self.on_change.as_ref().map(|_| "Fn(String)"))
+            .field("on_input", &self.on_input.as_ref().map(|_| "Fn(String)"))
             .field("attributes", &self.attributes)
             .finish()
     }
@@ -120,11 +178,64 @@ impl Element {
                             as Box<dyn FnMut(_)>);
 
                         html_element.set_onclick(Some(closure.as_ref().unchecked_ref()));
-
-                        // Important: We need to forget the closure to prevent it from being dropped
-                        // In a real application, you'd want to store these closures somewhere
-                        // to properly clean them up later
                         closure.forget();
+                    }
+                }
+
+                // Handle submit event for forms
+                if let Some(on_submit) = &props.on_submit {
+                    if tag == "form" {
+                        if let Some(form_element) = element.dyn_ref::<HtmlElement>() {
+                            let handler = on_submit.clone();
+                            let closure = Closure::wrap(Box::new(move |event: Event| {
+                                event.prevent_default(); // Prevent form submission
+                                handler(event);
+                            })
+                                as Box<dyn FnMut(_)>);
+
+                            form_element.set_onsubmit(Some(closure.as_ref().unchecked_ref()));
+                            closure.forget();
+                        }
+                    }
+                }
+
+                // Handle change event for inputs
+                if let Some(on_change) = &props.on_change {
+                    if tag == "input" || tag == "select" || tag == "textarea" {
+                        if let Some(input_element) = element.dyn_ref::<HtmlInputElement>() {
+                            let handler = on_change.clone();
+                            let closure = Closure::wrap(Box::new(move |_event: Event| {
+                                if let Some(target) = _event.target() {
+                                    if let Some(input) = target.dyn_ref::<HtmlInputElement>() {
+                                        handler(input.value());
+                                    }
+                                }
+                            })
+                                as Box<dyn FnMut(_)>);
+
+                            input_element.set_onchange(Some(closure.as_ref().unchecked_ref()));
+                            closure.forget();
+                        }
+                    }
+                }
+
+                // Handle input event for real-time updates
+                if let Some(on_input) = &props.on_input {
+                    if tag == "input" || tag == "textarea" {
+                        if let Some(input_element) = element.dyn_ref::<HtmlInputElement>() {
+                            let handler = on_input.clone();
+                            let closure = Closure::wrap(Box::new(move |_event: Event| {
+                                if let Some(target) = _event.target() {
+                                    if let Some(input) = target.dyn_ref::<HtmlInputElement>() {
+                                        handler(input.value());
+                                    }
+                                }
+                            })
+                                as Box<dyn FnMut(_)>);
+
+                            input_element.set_oninput(Some(closure.as_ref().unchecked_ref()));
+                            closure.forget();
+                        }
                     }
                 }
 
@@ -238,6 +349,86 @@ macro_rules! view {
         let mut props = $crate::component::Props::default();
         props.class = Some($class.to_string());
         props.on_click = Some(std::rc::Rc::new($handler));
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with onchange
+    (<$tag:ident onchange={$handler:expr}> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.on_change = Some(std::rc::Rc::new($handler));
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with onsubmit
+    (<$tag:ident onsubmit={$handler:expr}> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.on_submit = Some(std::rc::Rc::new($handler));
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with oninput
+    (<$tag:ident oninput={$handler:expr}> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.on_input = Some(std::rc::Rc::new($handler));
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with value attribute (for controlled inputs)
+    (<$tag:ident value={$value:expr}> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.attributes.push(("value".to_string(), $value.to_string()));
+
+        let children = vec![$($crate::view!($children)),*];
+
+        $crate::component::Element::Node {
+            tag: stringify!($tag).to_string(),
+            props,
+            children,
+        }
+    }};
+
+    // Element with type attribute  
+    (<$tag:ident type=$type:literal> $($children:tt)* </$end_tag:ident>) => {{
+        assert_eq!(stringify!($tag), stringify!($end_tag), "Mismatched tags");
+
+        let mut props = $crate::component::Props::default();
+        props.attributes.push(("type".to_string(), $type.to_string()));
 
         let children = vec![$($crate::view!($children)),*];
 

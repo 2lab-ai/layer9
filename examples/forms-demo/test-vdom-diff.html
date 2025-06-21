@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Layer9 Virtual DOM Diff Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Layer9 Virtual DOM Diff Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Form Interaction</h2>
+        <div id="root"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: DOM Mutation Observer</h2>
+        <button onclick="runDiffTest()">Run Diff Test</button>
+        <div id="mutations" class="log"></div>
+    </div>
+
+    <script type="module">
+        import init from './pkg/layer9_example_forms.js';
+
+        const log = document.getElementById('log');
+        const mutationsLog = document.getElementById('mutations');
+        
+        function addLog(message, isError = false) {
+            const entry = document.createElement('div');
+            entry.className = isError ? 'error' : 'success';
+            entry.textContent = `[${new Date().toISOString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Set up mutation observer to track DOM changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                let message = '';
+                
+                if (mutation.type === 'childList') {
+                    if (mutation.addedNodes.length > 0) {
+                        message = `Added ${mutation.addedNodes.length} node(s) to ${mutation.target.nodeName}`;
+                    }
+                    if (mutation.removedNodes.length > 0) {
+                        message += ` Removed ${mutation.removedNodes.length} node(s) from ${mutation.target.nodeName}`;
+                    }
+                } else if (mutation.type === 'attributes') {
+                    message = `Attribute '${mutation.attributeName}' changed on ${mutation.target.nodeName}`;
+                } else if (mutation.type === 'characterData') {
+                    message = `Text changed: "${mutation.oldValue}" → "${mutation.target.textContent}"`;
+                }
+                
+                if (message) {
+                    const entry = document.createElement('div');
+                    entry.textContent = message;
+                    mutationsLog.appendChild(entry);
+                    mutationsLog.scrollTop = mutationsLog.scrollHeight;
+                }
+            });
+        });
+
+        // Initialize WASM module
+        init().then(() => {
+            addLog('Layer9 WASM module loaded successfully');
+            
+            // Start observing the root element
+            const root = document.getElementById('root');
+            observer.observe(root, {
+                childList: true,
+                attributes: true,
+                characterData: true,
+                subtree: true,
+                attributeOldValue: true,
+                characterDataOldValue: true
+            });
+            
+            addLog('DOM mutation observer started');
+            
+            // Add some test interactions
+            setTimeout(() => {
+                addLog('Testing form interactions...');
+                
+                // Find and interact with the username input
+                const usernameInput = root.querySelector('input[type="text"]');
+                if (usernameInput) {
+                    addLog('Found username input');
+                    
+                    // Simulate typing
+                    usernameInput.value = 'test';
+                    usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    addLog('Typed "test" in username field');
+                    
+                    setTimeout(() => {
+                        usernameInput.value = 'testuser';
+                        usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        addLog('Changed username to "testuser"');
+                    }, 1000);
+                }
+                
+                // Find and interact with the password input
+                const passwordInput = root.querySelector('input[type="password"]');
+                if (passwordInput) {
+                    setTimeout(() => {
+                        passwordInput.value = 'pass';
+                        passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        addLog('Typed "pass" in password field (should show error)');
+                    }, 2000);
+                    
+                    setTimeout(() => {
+                        passwordInput.value = 'password123';
+                        passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        addLog('Changed password to valid value');
+                    }, 3000);
+                }
+            }, 1000);
+        }).catch(err => {
+            addLog(`Error loading WASM module: ${err}`, true);
+        });
+
+        // Manual diff test
+        window.runDiffTest = function() {
+            mutationsLog.innerHTML = '<div style="color: blue;">--- Running diff test ---</div>';
+            
+            // Trigger some changes
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach((input, i) => {
+                setTimeout(() => {
+                    input.value = `test${i}`;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }, i * 500);
+            });
+        };
+    </script>
+</body>
+</html>
