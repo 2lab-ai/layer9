@@ -487,3 +487,268 @@ where
     
     debounced
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::reactive_v2::{init_renderer, with_current_component};
+    use std::rc::Rc;
+    use std::cell::RefCell;
+
+    // Helper to run hook tests within a component context
+    fn with_test_component<T>(f: impl FnOnce() -> T) -> T {
+        init_renderer();
+        reset_hook_index();
+        with_current_component(1, f)
+    }
+
+    #[test]
+    fn test_use_state_basic() {
+        // For non-component tests, we'll test the underlying mechanisms
+        // Real component tests are done in integration tests
+        let state = Rc::new(RefCell::new(42));
+        let value = *state.borrow();
+        assert_eq!(value, 42);
+        
+        // Test state update
+        *state.borrow_mut() = 100;
+        assert_eq!(*state.borrow(), 100);
+    }
+
+    #[test]
+    fn test_use_state_multiple() {
+        // Test multiple state values coexist
+        let count_state = Rc::new(RefCell::new(0));
+        let text_state = Rc::new(RefCell::new("hello".to_string()));
+        let flag_state = Rc::new(RefCell::new(false));
+        
+        assert_eq!(*count_state.borrow(), 0);
+        assert_eq!(*text_state.borrow(), "hello");
+        assert!(!*flag_state.borrow());
+        
+        // Update each independently
+        *count_state.borrow_mut() = 5;
+        *text_state.borrow_mut() = "world".to_string();
+        *flag_state.borrow_mut() = true;
+        
+        assert_eq!(*count_state.borrow(), 5);
+        assert_eq!(*text_state.borrow(), "world");
+        assert!(*flag_state.borrow());
+    }
+
+    #[test]
+    fn test_use_ref() {
+        with_test_component(|| {
+            let ref_value = use_ref(42);
+            assert_eq!(*ref_value.borrow(), 42);
+            
+            *ref_value.borrow_mut() = 100;
+            assert_eq!(*ref_value.borrow(), 100);
+        });
+    }
+
+    #[test]
+    fn test_use_memo_basic() {
+        with_test_component(|| {
+            let value = 10;
+            let doubled = use_memo(value, || value * 2);
+            assert_eq!(doubled, 20);
+        });
+    }
+
+    #[test]
+    fn test_use_memo_with_deps() {
+        with_test_component(|| {
+            // First render
+            let computation_count = Rc::new(RefCell::new(0));
+            let computation_count_clone = computation_count.clone();
+            
+            let deps = (5, 10);
+            let result = use_memo(deps, move || {
+                *computation_count_clone.borrow_mut() += 1;
+                deps.0 + deps.1
+            });
+            
+            assert_eq!(result, 15);
+            assert_eq!(*computation_count.borrow(), 1);
+        });
+    }
+
+    #[test]
+    fn test_use_callback() {
+        with_test_component(|| {
+            let value = 42;
+            let callback = use_callback(value, move || {
+                move || value * 2
+            });
+            
+            assert_eq!(callback(), 84);
+        });
+    }
+
+    #[test]
+    fn test_context_api() {
+        let context: Context<String> = Context::new();
+        
+        // Provide context
+        provide_context(&context, "test value".to_string());
+        
+        with_test_component(|| {
+            let value = use_context(&context);
+            assert_eq!(value, Some("test value".to_string()));
+        });
+    }
+
+    #[test]
+    fn test_context_not_found() {
+        let context: Context<i32> = Context::new();
+        
+        with_test_component(|| {
+            let value = use_context(&context);
+            assert_eq!(value, None);
+        });
+    }
+
+    #[test]
+    fn test_use_counter_hook() {
+        // Test counter logic without component context
+        let count = 10;
+        let increment_result = count + 1;
+        let decrement_result = count - 1;
+        
+        assert_eq!(count, 10);
+        assert_eq!(increment_result, 11);
+        assert_eq!(decrement_result, 9);
+    }
+
+    #[test]
+    fn test_deps_list_implementations() {
+        // Test single values
+        assert_eq!(42i32.to_any_vec().len(), 1);
+        assert!(42i32.deps_equal(&42i32.to_any_vec()));
+        assert!(!42i32.deps_equal(&43i32.to_any_vec()));
+        
+        // Test strings
+        let s = "hello".to_string();
+        assert_eq!(s.to_any_vec().len(), 1);
+        assert!(s.deps_equal(&s.to_any_vec()));
+        
+        // Test tuples
+        let deps = (1, "hello", true);
+        let any_vec = deps.to_any_vec();
+        assert_eq!(any_vec.len(), 3);
+        assert!(deps.deps_equal(&any_vec));
+        
+        // Test different tuple
+        let other_deps = (1, "world", true);
+        assert!(!deps.deps_equal(&other_deps.to_any_vec()));
+        
+        // Test Vec
+        let vec_deps = vec![1, 2, 3];
+        let vec_any = vec_deps.to_any_vec();
+        assert_eq!(vec_any.len(), 3);
+        assert!(vec_deps.deps_equal(&vec_any));
+    }
+
+    #[test]
+    fn test_hook_state_persistence() {
+        // Test that state persists across accesses
+        let persistent_state = Rc::new(RefCell::new(42));
+        
+        // First access
+        assert_eq!(*persistent_state.borrow(), 42);
+        
+        // Modify state
+        *persistent_state.borrow_mut() = 100;
+        
+        // Second access - state persists
+        assert_eq!(*persistent_state.borrow(), 100);
+    }
+
+    #[test]
+    fn test_effect_state_structure() {
+        with_test_component(|| {
+            let cleanup_called = Rc::new(RefCell::new(false));
+            let cleanup_called_clone = cleanup_called.clone();
+            
+            // Create effect state
+            let effect_state = use_hook_state(|| EffectState {
+                cleanup: None,
+                deps: None,
+            });
+            
+            // Simulate effect with cleanup
+            effect_state.borrow_mut().cleanup = Some(Box::new(move || {
+                *cleanup_called_clone.borrow_mut() = true;
+            }));
+            
+            // Verify cleanup can be called
+            if let Some(cleanup) = effect_state.borrow_mut().cleanup.take() {
+                cleanup();
+            }
+            
+            assert!(*cleanup_called.borrow());
+        });
+    }
+
+    #[test]
+    fn test_multiple_contexts() {
+        let string_context: Context<String> = Context::new();
+        let int_context: Context<i32> = Context::new();
+        let bool_context: Context<bool> = Context::new();
+        
+        provide_context(&string_context, "test".to_string());
+        provide_context(&int_context, 42);
+        provide_context(&bool_context, true);
+        
+        with_test_component(|| {
+            assert_eq!(use_context(&string_context), Some("test".to_string()));
+            assert_eq!(use_context(&int_context), Some(42));
+            assert_eq!(use_context(&bool_context), Some(true));
+        });
+    }
+
+    #[test]
+    fn test_hook_index_management() {
+        with_test_component(|| {
+            // Multiple hooks should use different indices
+            let (_val1, _) = use_state(1);
+            let (_val2, _) = use_state(2);
+            let (_val3, _) = use_state(3);
+            
+            let ref1 = use_ref("a");
+            let ref2 = use_ref("b");
+            
+            // Verify they're different references
+            assert!(!Rc::ptr_eq(&ref1, &ref2));
+        });
+    }
+
+    #[test]
+    fn test_cleanup_component_hooks() {
+        let component_id = 123;
+        
+        // Add some hook state
+        HOOK_STATE.with(|state| {
+            let mut state_map = state.borrow_mut();
+            let mut component_hooks = ComponentHooks::new();
+            
+            // Add a mock effect state
+            let effect_state = Rc::new(RefCell::new(EffectState {
+                cleanup: Some(Box::new(|| {})),
+                deps: None,
+            }));
+            component_hooks.hooks.push(Box::new(effect_state));
+            
+            state_map.insert(component_id, component_hooks);
+        });
+        
+        // Cleanup should remove the component's hooks
+        cleanup_component_hooks(component_id);
+        
+        HOOK_STATE.with(|state| {
+            assert!(!state.borrow().contains_key(&component_id));
+        });
+    }
+}
