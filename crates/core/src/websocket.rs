@@ -25,11 +25,12 @@ pub enum WsMessage {
 
 /// WebSocket connection
 pub struct WsConnection {
-    ws: Option<WebSocket>,
+    ws: Rc<RefCell<Option<WebSocket>>>,
     state: Rc<RefCell<WsState>>,
     config: WsConfig,
     handlers: Rc<RefCell<WsHandlers>>,
     reconnect_timer: Rc<RefCell<Option<i32>>>,
+    reconnect_attempts: Rc<RefCell<u32>>,
 }
 
 pub struct WsConfig {
@@ -59,11 +60,12 @@ impl WsConnection {
         }));
 
         let mut conn = WsConnection {
-            ws: None,
+            ws: Rc::new(RefCell::new(None)),
             state: state.clone(),
             config,
             handlers: handlers.clone(),
             reconnect_timer: Rc::new(RefCell::new(None)),
+            reconnect_attempts: Rc::new(RefCell::new(0)),
         };
 
         conn.connect()?;
@@ -88,7 +90,7 @@ impl WsConnection {
         // Set up event handlers
         self.setup_handlers(&ws)?;
 
-        self.ws = Some(ws);
+        *self.ws.borrow_mut() = Some(ws);
         Ok(())
     }
 
@@ -96,15 +98,20 @@ impl WsConnection {
         let state = self.state.clone();
         let handlers = self.handlers.clone();
         let config = self.config.clone();
-        let _reconnect_timer = self.reconnect_timer.clone();
+        let reconnect_timer = self.reconnect_timer.clone();
+        let reconnect_attempts = self.reconnect_attempts.clone();
+        let ws_ref = self.ws.clone();
 
         // On open
         let on_open = {
             let state = state.clone();
             let handlers = handlers.clone();
+            let reconnect_attempts_clone = reconnect_attempts.clone();
 
             Closure::<dyn FnMut()>::new(move || {
                 *state.borrow_mut() = WsState::Connected;
+                // Reset reconnection attempts on successful connection
+                *reconnect_attempts_clone.borrow_mut() = 0;
 
                 if let Some(handler) = &handlers.borrow().on_open {
                     handler();
@@ -167,7 +174,14 @@ impl WsConnection {
 
                 // Handle reconnection
                 if config.reconnect && e.code() != 1000 {
-                    // TODO: Implement reconnection logic
+                    Self::schedule_reconnection(
+                        ws_ref.clone(),
+                        state.clone(),
+                        handlers.clone(),
+                        config.clone(),
+                        reconnect_timer.clone(),
+                        reconnect_attempts.clone(),
+                    );
                 }
             })
         };
@@ -177,8 +191,215 @@ impl WsConnection {
         Ok(())
     }
 
+    fn schedule_reconnection(
+        ws_ref: Rc<RefCell<Option<WebSocket>>>,
+        state: Rc<RefCell<WsState>>,
+        handlers: Rc<RefCell<WsHandlers>>,
+        config: WsConfig,
+        reconnect_timer: Rc<RefCell<Option<i32>>>,
+        reconnect_attempts: Rc<RefCell<u32>>,
+    ) {
+        let window = match web_sys::window() {
+            Some(w) => w,
+            None => return,
+        };
+
+        // Clear any existing reconnection timer
+        if let Some(timer_id) = reconnect_timer.borrow_mut().take() {
+            window.clear_timeout_with_handle(timer_id);
+        }
+
+        let current_attempts = *reconnect_attempts.borrow();
+        if current_attempts >= config.max_reconnect_attempts {
+            // Max attempts reached, stop trying
+            return;
+        }
+
+        // Calculate delay with exponential backoff
+        let base_delay = config.reconnect_interval;
+        let delay = base_delay * 2u32.pow(current_attempts.min(10)); // Cap exponential growth at 2^10
+
+        let reconnect_timer_clone = reconnect_timer.clone();
+        let closure = Closure::<dyn FnMut()>::new(move || {
+            // Increment attempts
+            *reconnect_attempts.borrow_mut() += 1;
+
+            // Update state to connecting
+            *state.borrow_mut() = WsState::Connecting;
+
+            // Create new WebSocket
+            let new_ws = if config.protocols.is_empty() {
+                match WebSocket::new(&config.url) {
+                    Ok(ws) => ws,
+                    Err(_) => {
+                        *state.borrow_mut() = WsState::Error("Failed to create WebSocket".to_string());
+                        // Schedule another retry
+                        Self::schedule_reconnection(
+                            ws_ref.clone(),
+                            state.clone(),
+                            handlers.clone(),
+                            config.clone(),
+                            reconnect_timer_clone.clone(),
+                            reconnect_attempts.clone(),
+                        );
+                        return;
+                    }
+                }
+            } else {
+                let protocols = js_sys::Array::new();
+                for protocol in &config.protocols {
+                    protocols.push(&JsValue::from_str(protocol));
+                }
+                match WebSocket::new_with_str_sequence(&config.url, &protocols) {
+                    Ok(ws) => ws,
+                    Err(_) => {
+                        *state.borrow_mut() = WsState::Error("Failed to create WebSocket".to_string());
+                        // Schedule another retry
+                        Self::schedule_reconnection(
+                            ws_ref.clone(),
+                            state.clone(),
+                            handlers.clone(),
+                            config.clone(),
+                            reconnect_timer_clone.clone(),
+                            reconnect_attempts.clone(),
+                        );
+                        return;
+                    }
+                }
+            };
+
+            // Set binary type
+            new_ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
+
+            // Setup handlers for the new WebSocket
+            Self::setup_handlers_for_reconnection(
+                &new_ws,
+                ws_ref.clone(),
+                state.clone(),
+                handlers.clone(),
+                config.clone(),
+                reconnect_timer_clone.clone(),
+                reconnect_attempts.clone(),
+            );
+
+            // Store the new WebSocket
+            *ws_ref.borrow_mut() = Some(new_ws);
+        });
+
+        match window.set_timeout_with_callback_and_timeout_and_arguments_0(
+            closure.as_ref().unchecked_ref(),
+            delay as i32,
+        ) {
+            Ok(handle) => {
+                *reconnect_timer.borrow_mut() = Some(handle);
+            }
+            Err(_) => {
+                // Failed to set timer
+            }
+        }
+
+        closure.forget();
+    }
+
+    fn setup_handlers_for_reconnection(
+        ws: &WebSocket,
+        ws_ref: Rc<RefCell<Option<WebSocket>>>,
+        state: Rc<RefCell<WsState>>,
+        handlers: Rc<RefCell<WsHandlers>>,
+        config: WsConfig,
+        reconnect_timer: Rc<RefCell<Option<i32>>>,
+        reconnect_attempts: Rc<RefCell<u32>>,
+    ) {
+        // On open
+        let on_open = {
+            let state = state.clone();
+            let handlers = handlers.clone();
+            let reconnect_attempts_clone = reconnect_attempts.clone();
+
+            Closure::<dyn FnMut()>::new(move || {
+                *state.borrow_mut() = WsState::Connected;
+                // Reset reconnection attempts on successful connection
+                *reconnect_attempts_clone.borrow_mut() = 0;
+
+                if let Some(handler) = &handlers.borrow().on_open {
+                    handler();
+                }
+            })
+        };
+        ws.set_onopen(Some(on_open.as_ref().unchecked_ref()));
+        on_open.forget();
+
+        // On message
+        let on_message = {
+            let handlers = handlers.clone();
+
+            Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
+                if let Some(handler) = &handlers.borrow().on_message {
+                    if let Ok(text) = e.data().dyn_into::<js_sys::JsString>() {
+                        handler(WsMessage::Text(text.into()));
+                    } else if let Ok(array_buffer) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
+                        let array = js_sys::Uint8Array::new(&array_buffer);
+                        let vec = array.to_vec();
+                        handler(WsMessage::Binary(vec));
+                    }
+                }
+            })
+        };
+        ws.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
+        on_message.forget();
+
+        // On error
+        let on_error = {
+            let state = state.clone();
+            let handlers = handlers.clone();
+
+            Closure::<dyn FnMut(_)>::new(move |e: ErrorEvent| {
+                let error_msg = format!("WebSocket error: {}", e.message());
+                *state.borrow_mut() = WsState::Error(error_msg.clone());
+
+                if let Some(handler) = &handlers.borrow().on_error {
+                    handler(error_msg);
+                }
+            })
+        };
+        ws.set_onerror(Some(on_error.as_ref().unchecked_ref()));
+        on_error.forget();
+
+        // On close
+        let on_close = {
+            let state = state.clone();
+            let handlers = handlers.clone();
+            let ws_ref = ws_ref.clone();
+            let config = config.clone();
+            let reconnect_timer = reconnect_timer.clone();
+            let reconnect_attempts = reconnect_attempts.clone();
+
+            Closure::<dyn FnMut(_)>::new(move |e: CloseEvent| {
+                *state.borrow_mut() = WsState::Disconnected;
+
+                if let Some(handler) = &handlers.borrow().on_close {
+                    handler(e.code(), e.reason());
+                }
+
+                // Handle reconnection
+                if config.reconnect && e.code() != 1000 {
+                    Self::schedule_reconnection(
+                        ws_ref.clone(),
+                        state.clone(),
+                        handlers.clone(),
+                        config.clone(),
+                        reconnect_timer.clone(),
+                        reconnect_attempts.clone(),
+                    );
+                }
+            })
+        };
+        ws.set_onclose(Some(on_close.as_ref().unchecked_ref()));
+        on_close.forget();
+    }
+
     pub fn send(&self, message: WsMessage) -> Result<(), JsValue> {
-        if let Some(ws) = &self.ws {
+        if let Some(ws) = &*self.ws.borrow() {
             match message {
                 WsMessage::Text(text) => ws.send_with_str(&text),
                 WsMessage::Binary(data) => {
@@ -197,7 +418,15 @@ impl WsConnection {
     }
 
     pub fn close(&self) -> Result<(), JsValue> {
-        if let Some(ws) = &self.ws {
+        // Clear any pending reconnection timer
+        if let Some(timer_id) = self.reconnect_timer.borrow_mut().take() {
+            if let Some(window) = web_sys::window() {
+                window.clear_timeout_with_handle(timer_id);
+            }
+        }
+        
+        // Close the WebSocket connection
+        if let Some(ws) = &*self.ws.borrow() {
             ws.close()?;
         }
         Ok(())
