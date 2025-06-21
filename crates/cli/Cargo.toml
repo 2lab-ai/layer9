@@ -37,3 +37,19 @@ futures = "0.3"
 
 # Browser opening
 webbrowser = "1.0"
+
+# Deployment
+reqwest = { version = "0.11", features = ["json", "stream", "multipart"] }
+regex = "1"
+atty = "0.2"
+zip = "0.6"
+tar = "0.4"
+flate2 = "1.0"
+base64 = "0.21"
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# HAF Linting
+syn = { version = "2", features = ["full", "visit", "visit-mut"] }
+quote = "1"

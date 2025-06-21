@@ -1,0 +1,59 @@
+# Layer9 Deployment Configuration
+
+[deploy]
+platform = "vercel"          # Default platform: vercel, netlify, aws, cloudflare
+build_dir = "dist"           # Build output directory
+environment = "production"   # Default environment
+project_name = "layer9-framework"
+domain = "layer9.dev"
+
+# Platform configurations
+[platforms.vercel]
+token = "$VERCEL_TOKEN"      # API token from environment variable
+team_id = ""                 # Optional: Vercel team ID
+framework = "vanilla"        # Framework preset
+node_version = "18.x"
+
+[platforms.netlify]
+token = "$NETLIFY_TOKEN"
+team_id = ""
+
+[platforms.aws]
+token = "$AWS_ACCESS_KEY_ID"
+region = "us-east-1"
+# S3 bucket will be created as: {project_name}-{environment}
+
+[platforms.cloudflare]
+token = "$CLOUDFLARE_API_TOKEN"
+account_id = ""
+
+# Environment configurations
+[environments.production]
+domain = "layer9.dev"
+
+[environments.production.variables]
+API_URL = "https://api.layer9.dev"
+PUBLIC_URL = "https://layer9.dev"
+
+[environments.production.secrets]
+secrets = ["DATABASE_URL", "JWT_SECRET", "API_KEY"]
+
+[environments.staging]
+domain = "staging.layer9.dev"
+build_command = "layer9 build --mode staging"
+
+[environments.staging.variables]
+API_URL = "https://staging-api.layer9.dev"
+PUBLIC_URL = "https://staging.layer9.dev"
+DEBUG = "true"
+
+[environments.preview]
+# Preview deployments get automatic URLs
+[environments.preview.variables]
+API_URL = "https://preview-api.layer9.dev"
+DEBUG = "true"
+
+# Deployment hooks
+[environments.production.hooks]
+pre_build = "cargo test"
+post_deploy = "echo 'Deployment complete!'"

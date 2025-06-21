@@ -1,5 +1,11 @@
 //! Layer9 CLI - Development tools
 
+mod deploy;
+// mod haf_lint;
+// mod haf_gen;
+// mod haf_refactor;
+mod haf_lint_simple;
+
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::*;
@@ -44,6 +50,7 @@ enum Commands {
     Build {
         /// Build mode
         #[arg(short, long, default_value = "production")]
+        #[allow(dead_code)]
         mode: String,
 
         /// Output directory
@@ -57,9 +64,68 @@ enum Commands {
 
     /// Deploy to production
     Deploy {
-        /// Target platform
+        /// Target platform (vercel, netlify, aws, cloudflare)
         #[arg(short, long, default_value = "vercel")]
         target: String,
+        
+        /// Environment to deploy to
+        #[arg(short, long, default_value = "production")]
+        env: String,
+        
+        /// Build directory
+        #[arg(short, long, default_value = "dist")]
+        build_dir: PathBuf,
+        
+        /// Configuration file
+        #[arg(short, long)]
+        config: Option<PathBuf>,
+        
+        /// Force deployment without confirmation
+        #[arg(short, long)]
+        force: bool,
+        
+        /// Show deployment logs
+        #[arg(short = 'v', long)]
+        #[allow(dead_code)]
+        verbose: bool,
+    },
+    
+    /// Check deployment status
+    DeployStatus {
+        /// Deployment ID
+        deployment_id: String,
+        
+        /// Platform
+        #[arg(short, long, default_value = "vercel")]
+        platform: String,
+    },
+    
+    /// List recent deployments
+    DeployList {
+        /// Platform
+        #[arg(short, long, default_value = "vercel")]
+        platform: String,
+        
+        /// Number of deployments to show
+        #[arg(short, long, default_value = "10")]
+        limit: usize,
+    },
+    
+    /// Rollback to previous deployment
+    DeployRollback {
+        /// Deployment ID to rollback to
+        deployment_id: String,
+        
+        /// Platform
+        #[arg(short, long, default_value = "vercel")]
+        platform: String,
+    },
+    
+    /// Generate deployment configuration
+    DeployInit {
+        /// Generate example environment file
+        #[arg(long)]
+        env_example: bool,
     },
 
     /// Run type checking
@@ -67,6 +133,34 @@ enum Commands {
 
     /// Format code
     Fmt,
+
+    /// Run HAF architectural linter
+    HafLint {
+        /// Path to lint (defaults to current directory)
+        #[arg(default_value = ".")]
+        path: PathBuf,
+        
+        /// Fail with exit code 1 if violations found
+        #[arg(long)]
+        strict: bool,
+    },
+    
+    /// Generate HAF-compliant project structure
+    HafNew {
+        /// Project name
+        name: String,
+    },
+    
+    /// Automatically refactor code to follow HAF principles
+    HafRefactor {
+        /// Path to refactor (defaults to current directory)
+        #[arg(default_value = ".")]
+        path: PathBuf,
+        
+        /// Show what would be done without making changes
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -83,14 +177,72 @@ async fn main() -> Result<()> {
         Commands::Build { mode, output, ssg } => {
             build_project(&mode, &output, ssg).await?;
         }
-        Commands::Deploy { target } => {
-            deploy_project(&target).await?;
+        Commands::Deploy { target, env, build_dir, config, force, verbose } => {
+            let platform = target.parse()?;
+            let options = deploy::DeployOptions {
+                platform,
+                build_dir,
+                environment: env,
+                config_path: config,
+                force,
+                verbose,
+            };
+            deploy::deploy(options).await?;
+        }
+        Commands::DeployStatus { deployment_id, platform } => {
+            let platform = platform.parse()?;
+            let status = deploy::get_status(platform, &deployment_id).await?;
+            println!("Deployment Status: {}", status);
+        }
+        Commands::DeployList { platform, limit } => {
+            let platform = platform.parse()?;
+            let deployments = deploy::list_deployments(platform, limit).await?;
+            
+            println!("{}", "Recent Deployments:".bright_blue().bold());
+            for (i, deploy) in deployments.iter().enumerate() {
+                println!(
+                    "{}. {} - {} - {}",
+                    i + 1,
+                    deploy.deployment_id.bright_black(),
+                    deploy.status,
+                    deploy.url.cyan()
+                );
+            }
+        }
+        Commands::DeployRollback { deployment_id, platform } => {
+            let platform = platform.parse()?;
+            deploy::rollback(platform, &deployment_id).await?;
+        }
+        Commands::DeployInit { env_example } => {
+            if env_example {
+                generate_env_example().await?;
+            } else {
+                generate_deploy_config().await?;
+            }
         }
         Commands::Check => {
             check_project().await?;
         }
         Commands::Fmt => {
             format_project().await?;
+        }
+        Commands::HafLint { path, strict } => {
+            // Use simple linter for now due to syn version issues
+            let success = haf_lint_simple::run_simple_linter(&path)?;
+            if strict && !success {
+                std::process::exit(1);
+            }
+        }
+        Commands::HafNew { name } => {
+            // haf_gen::generate_haf_project(&name)?;
+            
+            println!("{}", "HAF project generator temporarily disabled".yellow());
+            println!("Project name: {}", name);
+        }
+        Commands::HafRefactor { path, dry_run } => {
+            // haf_refactor::run_refactorer(&path, dry_run)?;
+            println!("{}", "HAF refactorer temporarily disabled".yellow());
+            println!("Path: {}, dry-run: {}", path.display(), dry_run);
         }
     }
 
@@ -109,7 +261,14 @@ async fn new_project(name: &str, template: &str) -> Result<()> {
 
     // Select template if not specified
     let template = if template == "default" {
-        let templates = vec!["minimal", "dashboard", "full-stack", "static-site"];
+        let templates = vec![
+            "minimal", 
+            "dashboard", 
+            "full-stack", 
+            "static-site",
+            "haf-minimal",
+            "haf-full"
+        ];
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select a template")
             .items(&templates)
@@ -168,6 +327,8 @@ lto = true
         "minimal" => include_str!("../templates/minimal.rs"),
         "dashboard" => include_str!("../templates/dashboard.rs"),
         "full-stack" => include_str!("../templates/fullstack.rs"),
+        "haf-minimal" => include_str!("../templates/haf-minimal.rs"),
+        "haf-full" => include_str!("../templates/haf-full.rs"),
         _ => include_str!("../templates/minimal.rs"),
     };
     std::fs::write(format!("{}/src/lib.rs", name), main_rs)?;
@@ -479,52 +640,44 @@ async fn build_project(mode: &str, output: &PathBuf, ssg: bool) -> Result<()> {
     Ok(())
 }
 
-/// Deploy project
-async fn deploy_project(target: &str) -> Result<()> {
-    println!(
-        "{}",
-        format!("🚀 Deploying to {}...", target)
-            .bright_blue()
-            .bold()
-    );
-
-    match target {
-        "vercel" => deploy_vercel().await?,
-        "netlify" => deploy_netlify().await?,
-        _ => return Err(anyhow::anyhow!("Unknown deployment target: {}", target)),
+/// Generate deployment configuration file
+async fn generate_deploy_config() -> Result<()> {
+    use dialoguer::Confirm;
+    
+    println!("{}", "🔧 Generating deployment configuration...".bright_blue().bold());
+    
+    let config_path = PathBuf::from("layer9.deploy.toml");
+    
+    if config_path.exists() && !Confirm::new()
+        .with_prompt("layer9.deploy.toml already exists. Overwrite?")
+        .default(false)
+        .interact()? {
+        println!("{}", "Cancelled".yellow());
+        return Ok(());
     }
-
+    
+    std::fs::write(&config_path, deploy::config::EXAMPLE_CONFIG)?;
+    
+    println!("{}", "✅ Created layer9.deploy.toml".green().bold());
+    println!("Edit this file to configure your deployment settings.");
+    println!("Don't forget to set up your API tokens in .env!");
+    
     Ok(())
 }
 
-/// Deploy to Vercel
-async fn deploy_vercel() -> Result<()> {
-    // Check if vercel CLI is installed
-    if which::which("vercel").is_err() {
-        return Err(anyhow::anyhow!(
-            "Vercel CLI not found. Install with: npm i -g vercel"
-        ));
-    }
-
-    // Run vercel deploy
-    let output = std::process::Command::new("vercel")
-        .args(["--prod"])
-        .output()?;
-
-    if !output.status.success() {
-        return Err(anyhow::anyhow!(
-            "Deployment failed:\n{}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-
-    println!("{}", "✅ Deployed successfully!".green().bold());
-    Ok(())
-}
-
-/// Deploy to Netlify
-async fn deploy_netlify() -> Result<()> {
-    println!("Netlify deployment not yet implemented");
+/// Generate .env.example file
+async fn generate_env_example() -> Result<()> {
+    println!("{}", "📝 Generating .env.example...".bright_blue().bold());
+    
+    let config = deploy::config::DeployConfig::from_project_root()
+        .unwrap_or_default();
+    
+    let example = deploy::environment::generate_env_example(&config)?;
+    std::fs::write(".env.example", example)?;
+    
+    println!("{}", "✅ Created .env.example".green().bold());
+    println!("Copy this file to .env and fill in your secrets.");
+    
     Ok(())
 }
 
